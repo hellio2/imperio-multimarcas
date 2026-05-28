@@ -1,0 +1,38 @@
+/*:root {
+    --cor-fundo: #0a0a0a;
+    --cor-card: #141414;
+    --cor-texto-principal: #ffffff;
+    --cor-texto-secundario: #aaaaaa;
+    --cor-primaria: #ffd700; //Amarelo Império
+    --cor-primaria-hover: #e6c200;
+    --cor-preto-puro: #000000;
+    --cor-borda: #262626;
+    --cor-sucesso: #28a745;
+    --fonte-principal: 'Montserrat', sans-serif;
+    --transicao: all 0.3s ease;
+} 
+*/
+
+:root {
+    /* Paleta Premium Minimalista (Fundo Claro com Textos Escuros) */
+    --cor-fundo: #fafafa; /* Off-white de luxo para o fundo da página */
+    --cor-card: #ffffff; /* Branco puro para os cards de produto */
+    --cor-texto-principal: #111111; /* Preto quase puro para textos e títulos */
+    --cor-texto-secundario: #666666; /* Cinza sofisticado para descrições */
+    
+    /* Cores da Marca (Preto e Amarelo) */
+    --cor-primaria: #ffd700; /* Amarelo Império */
+    --cor-primaria-hover: #e6c200;
+    --cor-preto-puro: #000000; /* Usado no Header, Footer e Botões principais */
+    
+    /* Utilitários */
+    --cor-borda: #eaeaea; /* Linhas bem sutis */
+    --cor-sucesso: #198754;
+    
+    /* Sombras Premium (Estilo Apple / Shopify) */
+    --sombra-leve: 0 4px 15px rgba(0,0,0,0.04);
+    --sombra-forte: 0 10px 30px rgba(0,0,0,0.1);
+    
+    --fonte-principal: 'Montserrat', sans-serif;
+    --transicao: all 0.3s ease;
+}

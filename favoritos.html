@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Império Multimarcas | Meus Favoritos</title>
+    <link rel="stylesheet" href="css/variaveis.css">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="css/componentes/home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html">Império<span>.</span></a>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html">Home</a>
+                <a href="produtos.html">Produtos</a>
+                <a href="favoritos.html" class="active">Favoritos</a>
+            </nav>
+            <div class="header-actions">
+                <div class="search-bar">
+                    <input type="text" placeholder="Buscar no Império...">
+                    <i class="fas fa-search"></i>
+                </div>
+                <a href="favoritos.html" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                    <span class="badge" id="fav-badge">0</span>
+                </a>
+                <a href="#" class="action-icon open-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="badge" id="cart-badge">0</span>
+                </a>
+                <a href="login.html" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <i class="fas fa-bars menu-toggle"></i>
+            </div>
+        </div>
+    </header>
+
+    <main class="section-container" style="margin-top: 40px;">
+        <div class="section-header">
+            <h2>Meus <span>Favoritos</span></h2>
+        </div>
+
+        <div class="products-grid" id="favorites-page-grid">
+            </div>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-brand">
+                <div class="logo"><a href="index.html">Império<span>.</span></a></div>
+                <p>A marca definitiva de Streetwear Premium. Elevando o seu estilo diário ao nível máximo de exclusividade.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Império Multimarcas. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="js/favoritos.js"></script>
+    <script src="js/carrinho.js"></script>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-drawer-header">
+            <h3>Seu Carrinho</h3>
+            <button class="close-cart-btn" id="close-cart-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-drawer-body" id="minicart-body"></div>
+        <div class="cart-drawer-footer">
+            <div class="cart-drawer-total">
+                <span>Subtotal:</span>
+                <span id="minicart-total">R$ 0,00</span>
+            </div>
+            <button class="hero-btn" style="width: 100%; text-align: center;" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+        </div>
+    </div>
+</body>
+</html>

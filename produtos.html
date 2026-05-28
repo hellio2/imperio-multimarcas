@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Império Multimarcas | Catálogo</title>
+    <link rel="stylesheet" href="css/variaveis.css">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="css/componentes/produto.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <a href="#" class="action-icon open-cart"> <i class="fas fa-shopping-cart"></i>
+    <span class="badge" id="cart-badge">0</span>
+    </a>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html">Império<span>.</span></a>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html">Home</a>
+                <a href="produtos.html" class="active">Produtos</a>
+                <a href="favoritos.html">Favoritos</a>
+            </nav>
+            <div class="header-actions">
+                <a href="favoritos.html" class="action-icon">
+                    <i class="far fa-heart"></i>
+                    <span class="badge" id="fav-badge">0</span>
+                </a>
+                <a href="carrinho.html" class="action-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="badge" id="cart-badge">0</span>
+                </a>
+                <i class="fas fa-bars menu-toggle"></i>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-layout">
+        <aside class="filters-sidebar">
+            <div class="filter-section">
+                <h4>Categorias</h4>
+                <ul class="filter-list">
+                    <li><label><input type="checkbox" checked> Camisetas</label></li>
+                    <li><label><input type="checkbox" checked> Jaquetas</label></li>
+                    <li><label><input type="checkbox" checked> Calças</label></li>
+                    <li><label><input type="checkbox" checked> Moletons</label></li>
+                    <li><label><input type="checkbox" checked> Acessórios</label></li>
+                </ul>
+            </div>
+            <div class="filter-section">
+                <h4>Preço</h4>
+                <ul class="filter-list">
+                    <li><label><input type="radio" name="price" checked> Todos os preços</label></li>
+                    <li><label><input type="radio" name="price"> Até R$ 150</label></li>
+                    <li><label><input type="radio" name="price"> R$ 150 a R$ 300</label></li>
+                    <li><label><input type="radio" name="price"> Acima de R$ 300</label></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main>
+            <div class="products-grid" id="catalog-grid">
+                </div>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-bottom">
+            &copy; 2026 Império Multimarcas. Todos os direitos reservados.
+        </div>
+    </footer>
+ 
+<!--
+    <script src="js/main.js"></script>
+    <script src="js/favoritos.js"></script>
+    <script src="js/carrinho.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const grid = document.getElementById("catalog-grid");
+            const favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
+            
+            grid.innerHTML = PRODUTOS_DB.map(prod => `
+                <div class="product-card">
+                    ${prod.badge ? `<div class="product-badge">${prod.badge}</div>` : ''}
+                    <button class="fav-btn-pos ${favs.includes(prod.id) ? 'active' : ''}" onclick="alternarFavorito(${prod.id}); this.classList.toggle('active');">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <div class="product-img-wrapper" onclick="window.location.href='produto-detalhe.html?id=${prod.id}'" style="cursor:pointer;">
+                        <div class="product-img-placeholder">${prod.icone}</div>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-cat">${prod.categoria}</div>
+                        <div class="product-title" onclick="window.location.href='produto-detalhe.html?id=${prod.id}'" style="cursor:pointer;">${prod.nome}</div>
+                        <div class="product-price-box">
+                            ${prod.precoAntigo ? `<span class="old-price">${formatarMoeda(prod.precoAntigo)}</span>` : ''}
+                            <span class="new-price">${formatarMoeda(prod.preco)}</span>
+                        </div>
+                        <button class="add-to-cart-btn" onclick="adicionarAoCarrinhoGlobal(${prod.id})">
+                            <i class="fas fa-shopping-cart"></i> Adicionar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        });
+    </script>
+    <div id="toast-container" class="toast-container"></div>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-drawer-header">
+            <h3>Seu Carrinho</h3>
+            <button class="close-cart-btn" id="close-cart-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-drawer-body" id="minicart-body">
+            </div>
+        <div class="cart-drawer-footer">
+            <div class="cart-drawer-total">
+                <span>Subtotal:</span>
+                <span id="minicart-total">R$ 0,00</span>
+            </div>
+            <button class="hero-btn" style="width: 100%; text-align: center;" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+        </div>
+    </div>
+</body>
+</html> -->
+
+    <script src="js/main.js"></script>
+    <script src="js/favoritos.js"></script>
+    <script src="js/carrinho.js"></script>
+    <script>
+        // Aguarda os produtos virem do banco antes de desenhar a tela
+        document.addEventListener("produtosCarregados", () => {
+            const grid = document.getElementById("catalog-grid");
+            if (!grid) return;
+            
+            const favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
+            
+            grid.innerHTML = PRODUTOS_DB.map(prod => `
+                <div class="product-card">
+                    ${prod.badge ? `<div class="product-badge">${prod.badge}</div>` : ''}
+                    <button class="fav-btn-pos ${favs.includes(prod.id) ? 'active' : ''}" onclick="alternarFavorito(${prod.id}); this.classList.toggle('active');">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <div class="product-img-wrapper" onclick="window.location.href='produto-detalhe.html?id=${prod.id}'" style="cursor:pointer;">
+                        <div class="product-img-placeholder">${prod.icone}</div>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-cat">${prod.categoria}</div>
+                        <div class="product-title" onclick="window.location.href='produto-detalhe.html?id=${prod.id}'" style="cursor:pointer;">${prod.nome}</div>
+                        <div class="product-price-box">
+                            ${prod.precoAntigo ? `<span class="old-price">${formatarMoeda(prod.precoAntigo)}</span>` : ''}
+                            <span class="new-price">${formatarMoeda(prod.preco)}</span>
+                        </div>
+                        <button class="add-to-cart-btn" onclick="adicionarAoCarrinhoGlobal(${prod.id})">
+                            <i class="fas fa-shopping-cart"></i> Adicionar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        });
+    </script>
+    <div id="toast-container" class="toast-container"></div>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-drawer-header">
+            <h3>Seu Carrinho</h3>
+            <button class="close-cart-btn" id="close-cart-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-drawer-body" id="minicart-body">
+            </div>
+        <div class="cart-drawer-footer">
+            <div class="cart-drawer-total">
+                <span>Subtotal:</span>
+                <span id="minicart-total">R$ 0,00</span>
+            </div>
+            <button class="hero-btn" style="width: 100%; text-align: center;" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+        </div>
+    </div>
+</body>
+</html>

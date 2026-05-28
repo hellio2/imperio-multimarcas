@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Império Multimarcas | Meu Carrinho</title>
+    <link rel="stylesheet" href="css/variaveis.css">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="css/componentes/carrinho.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <a href="#" class="action-icon open-cart"> <i class="fas fa-shopping-cart"></i>
+    <span class="badge" id="cart-badge">0</span>
+    </a>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html">Império<span>.</span></a>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html">Home</a>
+                <a href="produtos.html">Produtos</a>
+            </nav>
+            <div class="header-actions">
+                <a href="favoritos.html" class="action-icon">
+                    <i class="far fa-heart"></i>
+                    <span class="badge" id="fav-badge">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="cart-layout">
+        <section class="cart-items-section">
+            <h2 class="cart-title">Carrinho de Compras</h2>
+            <div id="cart-items-container">
+                </div>
+        </section>
+
+        <section class="cart-summary-section">
+            <h2 class="cart-title">Resumo do Pedido</h2>
+            <div class="summary-row">
+                <span>Subtotal</span>
+                <span id="subtotal-val">R$ 0,00</span>
+            </div>
+            <div class="summary-row">
+                <span>Desconto</span>
+                <span id="discount-val" style="color: var(--cor-sucesso);">R$ 0,00</span>
+            </div>
+            <div class="summary-row">
+                <span>Frete</span>
+                <span style="color: var(--cor-sucesso);">Grátis</span>
+            </div>
+            
+            <p id="coupon-msg" style="font-size: 0.85rem; color: var(--cor-sucesso); margin-top: 10px; font-weight: 600;"></p>
+            
+            <div class="coupon-area">
+                <input type="text" id="coupon-input" placeholder="Cupom (Ex: IMPERIO10)">
+                <button id="apply-coupon-btn">Aplicar</button>
+            </div>
+
+            <div class="summary-row total">
+                <span>Total</span>
+                <span id="total-val">R$ 0,00</span>
+            </div>
+
+            <button class="checkout-btn" onclick="window.location.href='checkout.html'" style="margin-top: 20px;">
+                Finalizar Compra <i class="fas fa-arrow-right"></i>
+            </button>
+        </section>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/carrinho.js"></script>
+    <div id="toast-container" class="toast-container"></div>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-drawer-header">
+            <h3>Seu Carrinho</h3>
+            <button class="close-cart-btn" id="close-cart-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-drawer-body" id="minicart-body">
+            </div>
+        <div class="cart-drawer-footer">
+            <div class="cart-drawer-total">
+                <span>Subtotal:</span>
+                <span id="minicart-total">R$ 0,00</span>
+            </div>
+            <button class="hero-btn" style="width: 100%; text-align: center;" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+        </div>
+    </div>
+</body>
+</html>

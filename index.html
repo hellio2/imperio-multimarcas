@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Império Multimarcas | Streetwear Premium</title>
+    <link rel="stylesheet" href="css/variaveis.css">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="css/componentes/home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html">Império<span>.</span></a>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html" class="active">Home</a>
+                <a href="produtos.html">Produtos</a>
+                <a href="favoritos.html">Favoritos</a>
+            </nav>
+            <div class="header-actions">
+                <div class="search-bar">
+                    <input type="text" placeholder="Buscar no Império...">
+                    <i class="fas fa-search"></i>
+                </div>
+                <a href="favoritos.html" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                    <span class="badge" id="fav-badge">0</span>
+                </a>
+                <a href="#" class="action-icon open-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="badge" id="cart-badge">0</span>
+                </a>
+                <a href="login.html" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <i class="fas fa-bars menu-toggle"></i>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Estilo Sem <span>Limites</span></h1>
+                <p>Descubra a coleção que está a definir o conceito de Streetwear Premium. Peças exclusivas para quem domina as ruas.</p>
+                <a href="produtos.html" class="hero-btn">Explorar Coleção <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="feature-box">
+                <i class="fas fa-shipping-fast"></i>
+                <h4>Envio Expresso</h4>
+                <p>Entrega rápida e segura para todo o país com rastreio.</p>
+            </div>
+            <div class="feature-box">
+                <i class="fas fa-crown"></i>
+                <h4>Qualidade Premium</h4>
+                <p>Algodão de alta gramagem e acabamentos impecáveis.</p>
+            </div>
+            <div class="feature-box">
+                <i class="fas fa-lock"></i>
+                <h4>Compra Segura</h4>
+                <p>Seus dados protegidos com criptografia de ponta.</p>
+            </div>
+        </section>
+
+        <section class="section-container">
+            <div class="section-header">
+                <h2>Lançamentos <span>Exclusivos</span></h2>
+                <a href="produtos.html" class="view-all-link">Ver Tudo <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <div class="products-grid" id="lancamentos-grid">
+                </div>
+        </section>
+
+        <section class="newsletter-section">
+            <h2>Faça Parte Do <span>Império</span></h2>
+            <p>Inscreva-se na nossa newsletter e receba 10% de desconto na sua primeira compra, além de acesso antecipado a drops exclusivos.</p>
+            <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Inscrição realizada com sucesso!');">
+                <input type="email" placeholder="Seu melhor e-mail" required>
+                <button type="submit" class="hero-btn" style="margin: 0;">Participar</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-brand">
+                <div class="logo"><a href="index.html">Império<span>.</span></a></div>
+                <p>A marca definitiva de Streetwear Premium. Elevando o seu estilo diário ao nível máximo de exclusividade.</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-tiktok"></i></a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="produtos.html">Produtos</a></li>
+                    <li><a href="favoritos.html">Favoritos</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Suporte</h4>
+                <ul>
+                    <li><a href="#">Fale Connosco</a></li>
+                    <li><a href="#">Políticas de Troca</a></li>
+                    <li><a href="#">Prazos de Entrega</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Império Multimarcas. Todos os direitos reservados. Desenvolvido com foco em exclusividade.</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="js/favoritos.js"></script>
+
+    <script>
+        // Aguarda os produtos serem carregados do banco de dados (PostgreSQL)
+        document.addEventListener("produtosCarregados", () => {
+            const lancamentosGrid = document.getElementById("lancamentos-grid");
+            if (!lancamentosGrid) return;
+            
+            // Pega os favoritos do localStorage para marcar o coraçãozinho visual
+            const favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
+            
+            // Exibe os 4 primeiros produtos retornados do banco de dados na Home
+            const produtosHome = PRODUTOS_DB.slice(0, 4); 
+
+            if (produtosHome.length === 0) {
+                lancamentosGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--cor-texto-secundario);">Nenhum lançamento disponível no momento.</p>`;
+                return;
+            }
+            
+            // Renderiza os produtos vindos diretamente do PostgreSQL
+            lancamentosGrid.innerHTML = produtosHome.map(prod => `
+                <div class="product-card">
+                    ${prod.badge ? `<div class="product-badge">${prod.badge}</div>` : ''}
+                    <button class="fav-btn-pos ${favs.includes(prod.id) ? 'active' : ''}" onclick="typeof alternarFavorito === 'function' ? alternarFavorito(${prod.id}) : null; this.classList.toggle('active');">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <div class="product-img-wrapper" onclick="window.location.href='produto-detalhe.html?id=${prod.id}'" style="cursor:pointer;">
+                        <div class="product-img-placeholder">${prod.icone || '👕'}</div>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-cat">${prod.categoria || 'Geral'}</div>
+                        <div class="product-title" onclick="window.location.href='produto-detalhe.html?id=${prod.id}'" style="cursor:pointer;">${prod.nome}</div>
+                        <div class="product-price-box">
+                            ${prod.preco_antigo ? `<span class="old-price">${formatarMoeda(prod.preco_antigo)}</span>` : ''}
+                            <span class="new-price">${formatarMoeda(prod.preco)}</span>
+                        </div>
+                        <button class="add-to-cart-btn" onclick="adicionarAoCarrinhoGlobal(${prod.id})">
+                            <i class="fas fa-shopping-cart"></i> Adicionar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        });
+    </script>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-drawer-header">
+            <h3>Seu Carrinho</h3>
+            <button class="close-cart-btn" id="close-cart-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-drawer-body" id="minicart-body">
+            </div>
+        <div class="cart-drawer-footer">
+            <div class="cart-drawer-total">
+                <span>Subtotal:</span>
+                <span id="minicart-total">R$ 0,00</span>
+            </div>
+            <button class="hero-btn" style="width: 100%; text-align: center;" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+        </div>
+    </div>
+</body>
+</html>

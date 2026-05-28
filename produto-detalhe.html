@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Império Multimarcas | Detalhes do Produto</title>
+    <link rel="stylesheet" href="css/variaveis.css">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="css/componentes/produto.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <a href="#" class="action-icon open-cart"> <i class="fas fa-shopping-cart"></i>
+    <span class="badge" id="cart-badge">0</span>
+    </a>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html">Império<span>.</span></a>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html">Home</a>
+                <a href="produtos.html">Produtos</a>
+            </nav>
+            <div class="header-actions">
+                <a href="carrinho.html" class="action-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="badge" id="cart-badge">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="detail-container" id="product-detail-view">
+        </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/favoritos.js"></script>
+    <script src="js/carrinho.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const params = new URLSearchParams(window.location.search);
+            const id = parseInt(params.get('id')) || 1;
+            const prod = PRODUTOS_DB.find(p => p.id === id) || PRODUTOS_DB[0];
+            
+            const favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
+            const isFav = favs.includes(prod.id);
+            
+            const view = document.getElementById("product-detail-view");
+            view.innerHTML = `
+                <div class="detail-img-area">
+                    <div>${prod.icone}</div>
+                </div>
+                <div class="detail-info-area">
+                    <div class="detail-cat">${prod.categoria}</div>
+                    <h1>${prod.nome}</h1>
+                    <div class="detail-price-box">
+                        ${prod.precoAntigo ? `<span class="detail-old-price">${formatarMoeda(prod.precoAntigo)}</span>` : ''}
+                        <span class="detail-new-price">${formatarMoeda(prod.preco)}</span>
+                    </div>
+                    <p class="detail-desc">Peça premium desenvolvida com algodão sustentável de alta gramatura. Acabamento reforçado nas costuras e design exclusivo Império Multimarcas para garantir o máximo estilo e caimento impecável.</p>
+                    
+                    <div class="size-selector">
+                        <h4>Selecione o Tamanho</h4>
+                        <div class="size-options">
+                            <button class="size-btn">P</button>
+                            <button class="size-btn active">M</button>
+                            <button class="size-btn">G</button>
+                            <button class="size-btn">GG</button>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="add-to-cart-btn" style="flex: 1;" id="add-btn-detail">
+                            <i class="fas fa-shopping-cart"></i> Adicionar ao Carrinho
+                        </button>
+                        <button class="fav-big-btn ${isFav ? 'active' : ''}" onclick="alternarFavorito(${prod.id}); this.classList.toggle('active');">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            const sizeBtns = document.querySelectorAll(".size-btn");
+            let tamanhoSelecionado = "M";
+            sizeBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    sizeBtns.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    tamanhoSelecionado = btn.innerText;
+                });
+            });
+            
+            document.getElementById("add-btn-detail").addEventListener("click", () => {
+                adicionarAoCarrinhoGlobal(prod.id, 1, tamanhoSelecionado);
+            });
+        });
+    </script>
+    <div id="toast-container" class="toast-container"></div>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-drawer-header">
+            <h3>Seu Carrinho</h3>
+            <button class="close-cart-btn" id="close-cart-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-drawer-body" id="minicart-body">
+            </div>
+        <div class="cart-drawer-footer">
+            <div class="cart-drawer-total">
+                <span>Subtotal:</span>
+                <span id="minicart-total">R$ 0,00</span>
+            </div>
+            <button class="hero-btn" style="width: 100%; text-align: center;" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+        </div>
+    </div>
+</body>
+</html>
