@@ -1,22 +1,20 @@
 const { Pool } = require('pg');
-require('dotenv').config(); // Carrega as variáveis do arquivo .env
+require('dotenv').config();
 
-// Cria um "Pool" de conexões. Isso é melhor para performance do que abrir/fechar conexões o tempo todo.
+// Configuração flexível: Funciona tanto no seu PC quanto no Render
 const pool = new Pool({
     user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
     host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
     database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+    // A MÁGICA ACONTECE AQUI: 
+    // Se o host não for o localhost (ou seja, está no Render), ativa o SSL obrigatório.
+    ssl: process.env.DB_HOST !== 'localhost' ? { rejectUnauthorized: false } : false
 });
 
-// Testa a conexão assim que o arquivo é chamado
-pool.connect((err, client, release) => {
-    if (err) {
-        return console.error('❌ Erro ao conectar no PostgreSQL:', err.stack);
-    }
-    console.log('✅ Conectado ao banco de dados PostgreSQL (imperio_db) com sucesso!');
-    release();
+pool.on('connect', () => {
+    // console.log('Conexão ao banco de dados estabelecida!'); // Opcional
 });
 
 module.exports = pool;
