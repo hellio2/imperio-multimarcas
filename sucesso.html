@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Império Multimarcas | Compra Aprovada</title>
+    <link rel="stylesheet" href="css/variaveis.css">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        .success-layout { max-width: 600px; margin: 100px auto; text-align: center; padding: 40px; background: #fff; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .success-icon { font-size: 5rem; color: #28a745; margin-bottom: 20px; animation: scaleUp 0.5s ease-out; }
+        .success-layout h1 { font-size: 2.2rem; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; }
+        .success-layout p { color: #666; font-size: 1.1rem; margin-bottom: 30px; line-height: 1.5; }
+        @keyframes scaleUp { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body style="background-color: #f4f6f9;">
+
+    <div class="success-layout" id="success-box">
+        <i class="fas fa-spinner fa-spin success-icon" style="color: #111;"></i>
+        <h1>Processando seu Pedido...</h1>
+        <p>Aguarde enquanto registramos sua compra no Império.</p>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const token = localStorage.getItem('imperio_token');
+            const box = document.getElementById('success-box');
+
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                // Solicita ao backend a geração oficial do pedido
+                const resposta = await fetch('/api/pedidos', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (resposta.ok) {
+                    const dados = await resposta.json();
+                    
+                    // Limpa o carrinho local do navegador
+                    localStorage.removeItem('imperio_cart');
+                    localStorage.removeItem('imperio_coupon');
+
+                    // Atualiza a tela com a comemoração
+                    box.innerHTML = `
+                        <i class="fas fa-check-circle success-icon"></i>
+                        <h1>Compra Aprovada!</h1>
+                        <p>Seu pedido <strong>#${dados.pedido_id}</strong> foi confirmado com sucesso. Você receberá as atualizações de rastreio em breve.</p>
+                        <a href="index.html" class="hero-btn" style="display:inline-block; margin-top: 10px;">Voltar para a Loja</a>
+                    `;
+                } else {
+                    box.innerHTML = `
+                        <i class="fas fa-exclamation-triangle success-icon" style="color: #dc3545;"></i>
+                        <h1>Oops!</h1>
+                        <p>Ocorreu um erro ao registrar seu pedido. Entre em contato com o suporte.</p>
+                        <a href="carrinho.html" class="hero-btn" style="display:inline-block; margin-top: 10px;">Voltar ao Carrinho</a>
+                    `;
+                }
+            } catch (e) {
+                box.innerHTML = `<h1>Erro de conexão</h1><p>Não foi possível comunicar com o servidor.</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

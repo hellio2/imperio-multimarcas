@@ -6,15 +6,11 @@
     <title>Império Multimarcas | Detalhes do Produto</title>
     <link rel="stylesheet" href="css/variaveis.css">
     <link rel="stylesheet" href="css/estilos.css">
-    <link rel="stylesheet" href="css/componentes/produto.css">
+    <link rel="stylesheet" href="css/componentes/home.css"> <link rel="stylesheet" href="css/componentes/produto-detalhe.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <a href="#" class="action-icon open-cart"> <i class="fas fa-shopping-cart"></i>
-    <span class="badge" id="cart-badge">0</span>
-    </a>
 </head>
 <body>
-
     <header>
         <div class="header-container">
             <div class="logo">
@@ -23,98 +19,205 @@
             <nav class="nav-menu">
                 <a href="index.html">Home</a>
                 <a href="produtos.html">Produtos</a>
+                <a href="favoritos.html">Favoritos</a>
             </nav>
             <div class="header-actions">
-                <a href="carrinho.html" class="action-icon">
+                <a href="favoritos.html" class="action-icon">
+                    <i class="far fa-heart"></i>
+                    <span class="badge" id="fav-badge">0</span>
+                </a>
+                <a href="#" class="action-icon open-cart">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="badge" id="cart-badge">0</span>
+                </a>
+                <a href="login.html" class="action-icon">
+                    <i class="fas fa-user"></i>
                 </a>
             </div>
         </div>
     </header>
 
-    <div class="detail-container" id="product-detail-view">
+    <main class="detail-layout" id="product-detail-container">
+        <div style="grid-column: 1/-1; text-align: center; padding: 100px 0;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--cor-primaria);"></i>
+            <p style="margin-top: 20px; font-weight: 600;">Carregando detalhes da peça...</p>
         </div>
+    </main>
+
+    <section class="section-container" style="margin-top: 60px; border-top: 1px solid var(--cor-borda); padding-top: 40px;">
+        <div class="section-header">
+            <h2>Quem viu este produto, <span>também curtiu</span></h2>
+        </div>
+        <div class="products-grid" id="sugestoes-grid">
+            </div>
+    </section>
+
+    <section class="newsletter-section">
+        <h2>Faça Parte Do <span>Império</span></h2>
+        <p>Inscreva-se na nossa newsletter e receba 10% de desconto na sua primeira compra, além de acesso antecipado a drops exclusivos.</p>
+        <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Inscrição realizada com sucesso!');">
+            <input type="email" placeholder="Seu melhor e-mail" required>
+            <button type="submit" class="hero-btn" style="margin: 0;">Participar</button>
+        </form>
+    </section>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-brand">
+                <div class="logo"><a href="index.html">Império<span>.</span></a></div>
+                <p>A marca definitiva de Streetwear Premium. Elevando o seu estilo diário ao nível máximo de exclusividade.</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-tiktok"></i></a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="produtos.html">Produtos</a></li>
+                    <li><a href="favoritos.html">Favoritos</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Suporte</h4>
+                <ul>
+                    <li><a href="#">Fale Connosco</a></li>
+                    <li><a href="#">Políticas de Troca</a></li>
+                    <li><a href="#">Prazos de Entrega</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Império Multimarcas. Todos os direitos reservados. Desenvolvido com foco em exclusividade.</p>
+        </div>
+    </footer>
 
     <script src="js/main.js"></script>
     <script src="js/favoritos.js"></script>
     <script src="js/carrinho.js"></script>
+
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const params = new URLSearchParams(window.location.search);
-            const id = parseInt(params.get('id')) || 1;
-            const prod = PRODUTOS_DB.find(p => p.id === id) || PRODUTOS_DB[0];
-            
+        let tamanhoSelecionado = "M";
+
+        function selecionarTamanho(elemento, tamanho) {
+            document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
+            elemento.classList.add('active');
+            tamanhoSelecionado = tamanho;
+        }
+
+        document.addEventListener("produtosCarregados", () => {
+            const container = document.getElementById("product-detail-container");
+            const sugestoesGrid = document.getElementById("sugestoes-grid");
+            if (!container) return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const produtoId = parseInt(urlParams.get('id'));
+
+            const prod = PRODUTOS_DB.find(p => p.id === produtoId);
             const favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
-            const isFav = favs.includes(prod.id);
-            
-            const view = document.getElementById("product-detail-view");
-            view.innerHTML = `
-                <div class="detail-img-area">
-                    <div>${prod.icone}</div>
+
+            if (!prod) {
+                container.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc3545; margin-bottom: 20px;"></i>
+                        <h3>Produto não encontrado</h3>
+                        <p style="color: var(--cor-texto-secundario); margin: 15px 0 25px 0;">A peça que você está procurando não existe ou foi removida do catálogo.</p>
+                        <a href="produtos.html" class="hero-btn">Voltar para a Loja</a>
+                    </div>
+                `;
+                return;
+            }
+
+            // Injeta o Produto Principal
+            container.innerHTML = `
+                <div class="detail-image-section">
+                    <div class="detail-img-box">
+                        ${prod.imagem_url 
+                            ? `<img src="${prod.imagem_url}" alt="${prod.nome}">` 
+                            : `<span style="font-size: 5rem;">👕</span>`
+                        }
+                    </div>
                 </div>
-                <div class="detail-info-area">
-                    <div class="detail-cat">${prod.categoria}</div>
-                    <h1>${prod.nome}</h1>
+
+                <div class="detail-info-section">
+                    <span class="detail-category">${prod.categoria || 'Coleção Exclusiva'}</span>
+                    <h1 class="detail-title">${prod.nome}</h1>
+                    
                     <div class="detail-price-box">
-                        ${prod.precoAntigo ? `<span class="detail-old-price">${formatarMoeda(prod.precoAntigo)}</span>` : ''}
+                        ${prod.preco_antigo ? `<span class="detail-old-price">${formatarMoeda(prod.preco_antigo)}</span>` : ''}
                         <span class="detail-new-price">${formatarMoeda(prod.preco)}</span>
                     </div>
-                    <p class="detail-desc">Peça premium desenvolvida com algodão sustentável de alta gramatura. Acabamento reforçado nas costuras e design exclusivo Império Multimarcas para garantir o máximo estilo e caimento impecável.</p>
-                    
-                    <div class="size-selector">
-                        <h4>Selecione o Tamanho</h4>
+
+                    <div class="detail-divider"></div>
+
+                    <div class="detail-sizes-wrapper">
+                        <h4>Selecionar Tamanho:</h4>
                         <div class="size-options">
-                            <button class="size-btn">P</button>
-                            <button class="size-btn active">M</button>
-                            <button class="size-btn">G</button>
-                            <button class="size-btn">GG</button>
+                            <button class="size-btn" onclick="selecionarTamanho(this, 'P')">P</button>
+                            <button class="size-btn active" onclick="selecionarTamanho(this, 'M')">M</button>
+                            <button class="size-btn" onclick="selecionarTamanho(this, 'G')">G</button>
+                            <button class="size-btn" onclick="selecionarTamanho(this, 'GG')">GG</button>
                         </div>
                     </div>
-                    
-                    <div class="action-buttons">
-                        <button class="add-to-cart-btn" style="flex: 1;" id="add-btn-detail">
-                            <i class="fas fa-shopping-cart"></i> Adicionar ao Carrinho
-                        </button>
-                        <button class="fav-big-btn ${isFav ? 'active' : ''}" onclick="alternarFavorito(${prod.id}); this.classList.toggle('active');">
-                            <i class="fas fa-heart"></i>
-                        </button>
+
+                    <p class="detail-stock-msg">
+                        <i class="fas fa-check-circle"></i> Disponível em Estoque (${prod.estoque} unidades)
+                    </p>
+
+                    <button class="detail-buy-btn" onclick="adicionarAoCarrinhoGlobal(${prod.id}, 1, tamanhoSelecionado)">
+                        <i class="fas fa-shopping-bag"></i> Adicionar ao Carrinho
+                    </button>
+
+                    <div class="detail-divider"></div>
+
+                    <div class="detail-description-box">
+                        <h4>Descrição do Produto</h4>
+                        <p>${prod.descricao || 'Nenhuma descrição detalhada foi informada para este item premium.'}</p>
                     </div>
                 </div>
             `;
-            
-            const sizeBtns = document.querySelectorAll(".size-btn");
-            let tamanhoSelecionado = "M";
-            sizeBtns.forEach(btn => {
-                btn.addEventListener("click", () => {
-                    sizeBtns.forEach(b => b.classList.remove("active"));
-                    btn.classList.add("active");
-                    tamanhoSelecionado = btn.innerText;
-                });
-            });
-            
-            document.getElementById("add-btn-detail").addEventListener("click", () => {
-                adicionarAoCarrinhoGlobal(prod.id, 1, tamanhoSelecionado);
-            });
+
+            // RENDEREZAÇÃO AUTOMÁTICA DAS SUGESTÕES
+            if (sugestoesGrid) {
+                // Filtra para remover o produto atual da lista e pega até 4 itens restantes do PostgreSQL
+                const outrasSugestoes = PRODUTOS_DB.filter(p => p.id !== produtoId).slice(0, 4);
+
+                if (outrasSugestoes.length === 0) {
+                    sugestoesGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--cor-texto-secundario);">Nenhuma recomendação disponível no momento.</p>`;
+                    return;
+                }
+
+                sugestoesGrid.innerHTML = outrasSugestoes.map(sug => `
+                    <div class="product-card">
+                        ${sug.badge ? `<div class="product-badge">${sug.badge}</div>` : ''}
+                        <button class="fav-btn-pos ${favs.includes(sug.id) ? 'active' : ''}" onclick="typeof alternarFavorito === 'function' ? alternarFavorito(${sug.id}) : null; this.classList.toggle('active');">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                        <div class="product-img-wrapper" onclick="window.location.href='produto-detalhe.html?id=${sug.id}'" style="cursor:pointer;">
+                            <div class="product-img-placeholder" style="background: none; padding: 0; display: flex; align-items: center; justify-content: center; height: 100%; overflow: hidden;">
+                                ${sug.imagem_url 
+                                    ? `<img src="${sug.imagem_url}" alt="${sug.nome}" style="width: 100%; height: 100%; object-fit: cover;">` 
+                                    : `<span style="font-size: 2.5rem;">👕</span>`
+                                }
+                            </div>
+                        </div>
+                        <div class="product-info">
+                            <div class="product-cat">${sug.categoria || 'Geral'}</div>
+                            <div class="product-title" onclick="window.location.href='produto-detalhe.html?id=${sug.id}'" style="cursor:pointer;">${sug.nome}</div>
+                            <div class="product-price-box">
+                                ${sug.preco_antigo ? `<span class="old-price">${formatarMoeda(sug.preco_antigo)}</span>` : ''}
+                                <span class="new-price">${formatarMoeda(sug.preco)}</span>
+                            </div>
+                            <button class="add-to-cart-btn" onclick="adicionarAoCarrinhoGlobal(${sug.id})">
+                                <i class="fas fa-shopping-cart"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
         });
     </script>
-    <div id="toast-container" class="toast-container"></div>
-
-    <div class="cart-overlay" id="cart-overlay"></div>
-    <div class="cart-drawer" id="cart-drawer">
-        <div class="cart-drawer-header">
-            <h3>Seu Carrinho</h3>
-            <button class="close-cart-btn" id="close-cart-btn"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="cart-drawer-body" id="minicart-body">
-            </div>
-        <div class="cart-drawer-footer">
-            <div class="cart-drawer-total">
-                <span>Subtotal:</span>
-                <span id="minicart-total">R$ 0,00</span>
-            </div>
-            <button class="hero-btn" style="width: 100%; text-align: center;" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
-        </div>
-    </div>
 </body>
 </html>

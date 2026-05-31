@@ -1,0 +1,309 @@
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f4f6f9;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Sidebar Lateral Restrita */
+.admin-sidebar {
+    width: 260px;
+    background-color: #111111;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    padding: 30px 0;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+}
+
+.admin-logo {
+    padding: 0 25px 30px 25px;
+    border-bottom: 1px solid #222222;
+    margin-bottom: 20px;
+}
+
+.admin-logo h2 {
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+.admin-logo h2 span {
+    color: var(--cor-primaria);
+}
+
+.admin-badge {
+    background-color: var(--cor-primaria);
+    color: #111111;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.admin-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 0 15px;
+}
+
+.admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    color: #b3b3b3;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 6px;
+    transition: var(--transicao);
+}
+
+.admin-nav-item i {
+    font-size: 1.1rem;
+    width: 20px;
+}
+
+.admin-nav-item:hover, .admin-nav-item.active {
+    color: #ffffff;
+    background-color: #222222;
+}
+
+.admin-nav-item.active {
+    background-color: var(--cor-primaria);
+    color: #111111;
+}
+
+.admin-nav-item.logout {
+    margin-top: auto;
+    color: #ff4d4d;
+}
+
+.admin-nav-item.logout:hover {
+    background-color: #2a1515;
+}
+
+/* Área de Conteúdo */
+.admin-content {
+    flex: 1;
+    margin-left: 260px;
+    padding: 40px;
+}
+
+.admin-section {
+    display: none;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.admin-section.active {
+    display: flex;
+}
+
+.admin-header h2 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.admin-header h2 span {
+    color: var(--cor-texto-secundario);
+}
+
+.admin-header p {
+    color: #666666;
+    margin-top: 8px;
+}
+
+.admin-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+/* Layout dos Formulários */
+.admin-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.form-control {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-control label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #444444;
+}
+
+.form-control input, .form-control select, .form-control textarea {
+    padding: 12px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    background-color: #ffffff;
+}
+
+.form-control input:focus, .form-control select:focus, .form-control textarea:focus {
+    border-color: #111111;
+}
+
+.admin-btn {
+    background-color: #111111;
+    color: #ffffff;
+    border: none;
+    padding: 15px 25px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transicao);
+    margin-top: 25px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-btn:hover {
+    background-color: var(--cor-primaria);
+    color: #111111;
+}
+
+/* Tabelas Administrativas */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.admin-table th, .admin-table td {
+    padding: 15px;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.admin-table th {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    color: #666666;
+    background-color: #fafafa;
+}
+
+.admin-table-img {
+    width: 45px;
+    height: 45px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    overflow: hidden;
+}
+
+.admin-table-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.table-action-btn {
+    border: none;
+    padding: 6px 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.table-action-btn.delete {
+    background-color: #ffe6e6;
+    color: #cc0000;
+}
+
+.table-action-btn.edit {
+    background-color: #e6f2ff;
+    color: #0066cc;
+}
+
+/* Badges de Status do Pedido */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-badge.pendente {
+    background-color: #fff3cd;
+    color: #856404;
+}
+/* Estilização do Modal de Edição */
+.admin-modal {
+    display: none; /* Começa escondido */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Fundo escuro transparente */
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.admin-modal.active {
+    display: flex; /* Exibe centralizado quando ativo */
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 750px;
+    max-height: 90vh;
+    overflow-y: auto; /* Adiciona rolagem interna se a tela for pequena */
+    position: relative;
+    animation: surgimentoModal 0.3s ease-out;
+}
+
+.modal-header-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eeeeee;
+    padding-bottom: 15px;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: #666;
+    transition: var(--transicao);
+}
+
+.close-modal-btn:hover {
+    color: #111;
+}
+
+@keyframes surgimentoModal {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}

@@ -1,15 +1,11 @@
-// Alternar status de favorito (Adicionar ou Remover)
 async function alternarFavorito(id) {
     let favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
     const index = favs.indexOf(id);
-    const token = localStorage.getItem('imperio_token'); // Verifica se tem alguém logado
+    const token = localStorage.getItem('imperio_token'); 
     
     if (index > -1) {
-        // Remover
         favs.splice(index, 1);
         if (typeof mostrarNotificacao === 'function') mostrarNotificacao("Removido dos favoritos.");
-        
-        // Remove do banco de dados se estiver logado
         if (token) {
             await fetch(`/api/favoritos/${id}`, { 
                 method: 'DELETE', 
@@ -17,11 +13,8 @@ async function alternarFavorito(id) {
             });
         }
     } else {
-        // Adicionar
         favs.push(id);
         if (typeof mostrarNotificacao === 'function') mostrarNotificacao("Adicionado aos favoritos!");
-        
-        // Adiciona no banco de dados se estiver logado
         if (token) {
             await fetch('/api/favoritos', {
                 method: 'POST',
@@ -39,14 +32,11 @@ async function alternarFavorito(id) {
     renderizarFavoritosPagina();
 }
 
-// Renderizar os produtos favoritados na tela
 function renderizarFavoritosPagina() {
     const container = document.getElementById("favorites-page-grid");
-    if (!container) return; // Se não estiver na página favoritos.html, sai da função
+    if (!container) return; 
     
     const favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
-    
-    // CORREÇÃO: Filtra os itens reais vindos do PostgreSQL (PRODUTOS_DB)
     const produtosFavoritos = PRODUTOS_DB.filter(p => favs.includes(p.id));
     
     if (produtosFavoritos.length === 0) {
@@ -67,7 +57,12 @@ function renderizarFavoritosPagina() {
                 <i class="fas fa-heart"></i>
             </button>
             <div class="product-img-wrapper" onclick="window.location.href='produto-detalhe.html?id=${prod.id}'" style="cursor:pointer;">
-                <div class="product-img-placeholder">${prod.icone || '👕'}</div>
+                <div class="product-img-placeholder" style="background: none; padding: 0; display: flex; align-items: center; justify-content: center; height: 100%; overflow: hidden;">
+                    ${prod.imagem_url 
+                        ? `<img src="${prod.imagem_url}" alt="${prod.nome}" style="width: 100%; height: 100%; object-fit: cover;">` 
+                        : `<span style="font-size: 2.5rem;">👕</span>`
+                    }
+                </div>
             </div>
             <div class="product-info">
                 <div class="product-cat">${prod.categoria || 'Geral'}</div>
@@ -84,5 +79,4 @@ function renderizarFavoritosPagina() {
     `).join('');
 }
 
-// CORREÇÃO CRÍTICA: Escuta o evento disparado após carregar os produtos do PostgreSQL
 document.addEventListener("produtosCarregados", renderizarFavoritosPagina);

@@ -1,15 +1,11 @@
 let PRODUTOS_DB = [];
 
-// Função para buscar os produtos reais do PostgreSQL
 async function carregarProdutosDoBanco() {
     try {
         const resposta = await fetch('/api/produtos');
         if (!resposta.ok) throw new Error('Erro ao buscar dados do servidor');
         PRODUTOS_DB = await resposta.json();
-        
-        // Assim que os produtos carregam, fazemos a faxina dos contadores
         atualizarContadores(); 
-        
         document.dispatchEvent(new Event('produtosCarregados'));
     } catch (erro) {
         console.error('⚠️ Não foi possível carregar os produtos do banco.', erro);
@@ -17,7 +13,6 @@ async function carregarProdutosDoBanco() {
     }
 }
 
-// Sincroniza e puxa o carrinho direto do PostgreSQL se estiver logado
 async function sincronizarCarrinhoDoBanco() {
     const token = localStorage.getItem('imperio_token');
     if (!token) return;
@@ -75,11 +70,8 @@ function atualizarContadores() {
     const cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
     let favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
     
-    // NOVA LÓGICA: Limpeza de Favoritos Fantasmas
-    // Só entra aqui se o banco de dados já mandou os produtos
     if (PRODUTOS_DB.length > 0) {
         const favsValidos = favs.filter(id => PRODUTOS_DB.some(p => p.id === id));
-        // Se a quantidade for diferente, significa que tinha fantasma. Vamos limpar o navegador.
         if (favsValidos.length !== favs.length) {
             favs = favsValidos;
             localStorage.setItem("imperio_favorites", JSON.stringify(favs));
@@ -88,8 +80,6 @@ function atualizarContadores() {
     
     const cartCount = cart.reduce((acc, item) => acc + item.qtd, 0);
     document.querySelectorAll("#cart-badge").forEach(badge => badge.innerText = cartCount);
-    
-    // Atualiza todos os ícones de favoritos na tela com a contagem real e limpa
     document.querySelectorAll("#fav-badge").forEach(badge => badge.innerText = favs.length);
 }
 
@@ -99,10 +89,9 @@ function formatarMoeda(valor) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // Primeiro carregamos os dados, a atualização dos contadores agora acontece DENTRO do carregamento
     await carregarProdutosDoBanco();
     await sincronizarCarrinhoDoBanco(); 
-    await sincronizarFavoritosDoBanco(); // Adicione esta linha!
+    await sincronizarFavoritosDoBanco();
     
     const menuToggle = document.querySelector(".menu-toggle");
     const navMenu = document.querySelector(".nav-menu");
@@ -190,18 +179,47 @@ function renderizarMinicart() {
         const valor = prod.preco * item.qtd;
         subtotal += valor;
         return `
-            <div style="display:flex; justify-content:space-between; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                <div style="display:flex; gap: 10px;">
-                    <div style="font-size:2rem;">${prod.icone}</div>
+            <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <div style="display:flex; gap: 10px; align-items: center;">
+                    <div class="minicart-img-box" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #f4f6f9; border-radius: 4px; overflow: hidden;">
+                        ${prod.imagem_url ? `<img src="${prod.imagem_url}" style="width:100%; height:100%; object-fit:cover;">` : `<span style="font-size:1.5rem;">👕</span>`}
+                    </div>
                     <div>
                         <h4 style="font-size:0.9rem;">${prod.nome}</h4>
-                        <p style="font-size:0.8rem; color:#666;">Tamanho: ${item.tamanho} | Qtd: ${item.qtd}</p>
+                        <p style="font-size:0.8rem; color:#666;">Tam: ${item.tamanho} | Qtd: ${item.qtd}</p>
                         <p style="font-weight:bold; color:var(--cor-texto-principal);">${formatarMoeda(valor)}</p>
                     </div>
                 </div>
+                <button onclick="removerDoCarrinhoGlobal(${item.id}, '${item.tamanho}')" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size: 1.1rem; padding: 5px;">
+                    <i class="far fa-trash-alt"></i>
+                </button>
             </div>
         `;
     }).join('');
 
     minicartTotal.innerText = formatarMoeda(subtotal);
+}
+
+// Remove o item do banco de dados e do navegador
+async function removerDoCarrinhoGlobal(id, tamanho) {
+    const token = localStorage.getItem('imperio_token');
+    
+    if (token) {
+        try {
+            await fetch(`/api/carrinho/${id}/${tamanho}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        } catch (err) { console.error("Erro ao deletar do banco:", err); }
+    }
+
+    let cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
+    cart = cart.filter(i => !(i.id === id && i.tamanho === tamanho));
+    localStorage.setItem("imperio_cart", JSON.stringify(cart));
+    
+    atualizarContadores();
+    renderizarMinicart();
+    
+    // Atualiza a página inteira do carrinho se o usuário estiver nela
+    if (typeof renderizarCarrinhoPagina === 'function') renderizarCarrinhoPagina();
 }

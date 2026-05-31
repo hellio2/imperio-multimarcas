@@ -3,147 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Império Multimarcas | Finalizar Compra</title>
+    <title>Império Multimarcas | Checkout Seguro</title>
     <link rel="stylesheet" href="css/variaveis.css">
     <link rel="stylesheet" href="css/estilos.css">
-    <link rel="stylesheet" href="css/componentes/carrinho.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <a href="#" class="action-icon open-cart"> <i class="fas fa-shopping-cart"></i>
-    <span class="badge" id="cart-badge">0</span>
-    </a>
+    <style>
+        .checkout-layout { max-width: 800px; margin: 60px auto; padding: 0 20px; }
+        .checkout-box { background: #fff; padding: 40px; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .checkout-header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        .checkout-header h2 { font-size: 2rem; font-weight: 900; text-transform: uppercase; }
+        .checkout-header i { color: #009ee3; font-size: 2.5rem; margin-bottom: 15px; } /* Cor do MP */
+        
+        .cep-area { display: flex; gap: 10px; margin-bottom: 20px; }
+        .cep-area input { flex: 1; padding: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        .cep-area button { padding: 0 25px; background: #111; color: #fff; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase;}
+        
+        .frete-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
+        .frete-card { border: 1px solid #ddd; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; transition: 0.3s; }
+        .frete-card:hover { border-color: #111; }
+        
+        .checkout-btn { width: 100%; background: #009ee3; color: #fff; border: none; padding: 20px; font-size: 1.2rem; font-weight: 900; text-transform: uppercase; border-radius: 4px; cursor: pointer; transition: 0.3s; margin-top: 20px; }
+        .checkout-btn:hover { background: #007eb5; }
+        
+        .secure-badge { text-align: center; font-size: 0.85rem; color: #666; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    </style>
 </head>
-<body>
+<body style="background-color: #f4f6f9;">
 
-    <header>
-        <div class="header-container">
-            <div class="logo">
-                <a href="index.html">Império<span>.</span></a>
-            </div>
-        </div>
-    </header>
-
-    <form class="checkout-grid" onsubmit="finalizarPedido(event)">
-        <div class="checkout-form-panel">
-            <h2 class="cart-title">Dados de Entrega</h2>
-            <div class="form-group-row">
-                <div class="form-field">
-                    <label for="nome">Nome Completo</label>
-                    <input type="text" id="nome" required placeholder="João Silva">
-                </div>
-                <div class="form-field">
-                    <label for="cpf">CPF</label>
-                    <input type="text" id="cpf" required placeholder="000.000.000-00">
-                </div>
-            </div>
-            <div class="form-group-row">
-                <div class="form-field">
-                    <label for="cep">CEP</label>
-                    <input type="text" id="cep" required placeholder="00000-000">
-                </div>
-                <div class="form-field">
-                    <label for="endereco">Endereço</label>
-                    <input type="text" id="endereco" required placeholder="Av. Central, 123">
-                </div>
+    <div class="checkout-layout">
+        <div class="checkout-box">
+            <div class="checkout-header">
+                <i class="fas fa-lock"></i>
+                <h2>Finalizar <span>Pedido</span></h2>
+                <p>Ambiente 100% seguro. Seus dados são criptografados.</p>
             </div>
 
-            <h2 class="cart-title" style="margin-top: 30px;">Forma de Pagamento</h2>
-            <div class="payment-methods">
-                <div class="method-box active" data-method="cartao">
-                    <i class="far fa-credit-card"></i>
-                    <span>Cartão</span>
+            <div style="margin-bottom: 30px;">
+                <h4 style="margin-bottom: 10px; text-transform: uppercase; font-size: 0.9rem;">1. Calcular Frete</h4>
+                <div class="cep-area">
+                    <input type="text" id="cep-input" placeholder="Digite seu CEP (Somente números)" maxlength="8">
+                    <button onclick="calcularFrete()">Calcular</button>
                 </div>
-                <div class="method-box" data-method="pix">
-                    <i class="fab fa-pix"></i>
-                    <span>PIX (-5%)</span>
-                </div>
-                <div class="method-box" data-method="boleto">
-                    <i class="fas fa-barcode"></i>
-                    <span>Boleto</span>
-                </div>
+                <div id="frete-resultados" class="frete-options"></div>
             </div>
 
-            <div class="payment-details-box">
-                <div id="credit-card-fields">
-                    <div class="form-field">
-                        <label>Número do Cartão</label>
-                        <input type="text" placeholder="0000 0000 0000 0000">
-                    </div>
-                    <div class="form-group-row">
-                        <div class="form-field">
-                            <label>Validade</label>
-                            <input type="text" placeholder="MM/AA">
-                        </div>
-                        <div class="form-field">
-                            <label>CVV</label>
-                            <input type="text" placeholder="123">
-                        </div>
-                    </div>
-                    <div class="form-field">
-                        <label>Parcelamento</label>
-                        <select>
-                            <option>1x sem juros</option>
-                            <option>2x sem juros</option>
-                            <option>3x sem juros</option>
-                            <option>6x sem juros</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="pix-fields" style="display: none;">
-                    <div class="pix-qr-simulation">
-                        <div class="qr-placeholder">[ QR CODE PIX SIMULADO ]</div>
-                        <p style="font-size: 0.9rem; color: var(--cor-texto-secundario);">Escaneie o código acima ou use o Copia e Cola para pagar.</p>
-                        <button type="button" class="coupon-area" style="border:none; background:#222; padding:10px 20px; color:#fff; border-radius:4px; cursor:pointer;" onclick="alert('Código Copiado!')">Copiar Código Pix</button>
-                    </div>
-                </div>
-
-                <div id="boleto-fields" style="display: none;">
-                    <p style="font-size: 0.95rem; color: var(--cor-texto-secundario); text-align: center;">O boleto bancário será gerado após a finalização do pedido. Pode ser pago em qualquer banco ou aplicativo bancário.</p>
+            <div style="border-top: 1px solid #eee; padding-top: 30px;">
+                <h4 style="margin-bottom: 10px; text-transform: uppercase; font-size: 0.9rem;">2. Pagamento Seguro</h4>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 20px;">Você será redirecionado para a plataforma oficial do Mercado Pago para efetuar o pagamento via Pix, Boleto ou Cartão de Crédito.</p>
+                
+                <button class="checkout-btn" id="btn-pagar" onclick="iniciarPagamento()">
+                    Ir para Pagamento Seguro <i class="fas fa-shield-alt" style="margin-left: 10px;"></i>
+                </button>
+                
+                <div class="secure-badge">
+                    <i class="fas fa-check-circle" style="color: #28a745;"></i> Processado por Mercado Pago
                 </div>
             </div>
-        </div>
-
-        <div class="cart-summary-section">
-            <h2 class="cart-title">Resumo Final</h2>
-            <div class="summary-row">
-                <span>Subtotal</span>
-                <span id="check-subtotal">R$ 0,00</span>
-            </div>
-            <div class="summary-row">
-                <span>Frete</span>
-                <span style="color: var(--cor-sucesso);">Grátis</span>
-            </div>
-            <div class="summary-row total">
-                <span>Total a Pagar</span>
-                <span id="check-total">R$ 0,00</span>
-            </div>
-
-            <button type="submit" class="checkout-btn" style="margin-top: 30px;">
-                <i class="fas fa-lock"></i> Concluir Compra
-            </button>
-        </div>
-    </form>
-
-    <script src="js/main.js"></script>
-    <script src="js/checkout.js"></script>
-    <div id="toast-container" class="toast-container"></div>
-
-    <div class="cart-overlay" id="cart-overlay"></div>
-    <div class="cart-drawer" id="cart-drawer">
-        <div class="cart-drawer-header">
-            <h3>Seu Carrinho</h3>
-            <button class="close-cart-btn" id="close-cart-btn"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="cart-drawer-body" id="minicart-body">
-            </div>
-        <div class="cart-drawer-footer">
-            <div class="cart-drawer-total">
-                <span>Subtotal:</span>
-                <span id="minicart-total">R$ 0,00</span>
-            </div>
-            <button class="hero-btn" style="width: 100%; text-align: center;" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
         </div>
     </div>
+
+    <script>
+        async function calcularFrete() {
+            const cep = document.getElementById('cep-input').value;
+            const container = document.getElementById('frete-resultados');
+            
+            if (cep.length < 8) return alert('Digite um CEP válido.');
+            
+            container.innerHTML = '<p>Calculando rota com os Correios...</p>';
+            
+            try {
+                const resposta = await fetch('/api/frete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cep_destino: cep })
+                });
+                
+                const dados = await resposta.json();
+                if (resposta.ok) {
+                    container.innerHTML = dados.fretes.map(f => `
+                        <div class="frete-card">
+                            <div>
+                                <strong style="text-transform: uppercase;">${f.Codigo === '04014' ? 'SEDEX' : 'PAC'}</strong>
+                                <p style="font-size: 0.85rem; color: #666; margin-top: 5px;">Entrega em até ${f.PrazoEntrega} dias úteis</p>
+                            </div>
+                            <strong style="font-size: 1.1rem;">R$ ${f.Valor}</strong>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `<p style="color: red;">${dados.erro}</p>`;
+                }
+            } catch (e) {
+                container.innerHTML = '<p style="color: red;">Erro ao calcular frete.</p>';
+            }
+        }
+
+        async function iniciarPagamento() {
+            const token = localStorage.getItem('imperio_token');
+            const btn = document.getElementById('btn-pagar');
+            
+            if (!token) {
+                alert("Você precisa estar logado para finalizar a compra.");
+                window.location.href = 'login.html';
+                return;
+            }
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando link seguro...';
+            btn.disabled = true;
+
+            try {
+                const resposta = await fetch('/api/pagamento/checkout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const dados = await resposta.json();
+
+                if (resposta.ok && dados.init_point) {
+                    // Redireciona o cliente para a URL do Mercado Pago
+                    window.location.href = dados.init_point;
+                } else {
+                    alert(dados.erro || "Erro ao gerar pagamento. Verifique seu carrinho.");
+                    btn.innerHTML = 'Tentar Novamente';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert("Erro de conexão com o servidor de pagamentos.");
+                btn.innerHTML = 'Tentar Novamente';
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>

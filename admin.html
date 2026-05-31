@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Império Multimarcas | Painel Administrativo</title>
+    <link rel="stylesheet" href="css/variaveis.css">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="css/componentes/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="admin-logo">
+                <h2>Império<span>.</span></h2>
+                <span class="admin-badge">Admin</span>
+            </div>
+            <nav class="admin-nav">
+                <a href="#" class="admin-nav-item active" onclick="alternarPainel('novo-produto')">
+                    <i class="fas fa-plus-circle"></i> Novo Produto
+                </a>
+                <a href="#" class="admin-nav-item" onclick="alternarPainel('catalogo')">
+                    <i class="fas fa-boxes"></i> Gerenciar Catálogo
+                </a>
+                <a href="#" class="admin-nav-item" onclick="alternarPainel('pedidos')">
+                    <i class="fas fa-shopping-bag"></i> Pedidos
+                </a>
+                <a href="index.html" class="admin-nav-item logout">
+                    <i class="fas fa-arrow-left"></i> Sair do Painel
+                </a>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <section id="panel-novo-produto" class="admin-section active">
+                <div class="admin-header">
+                    <h2>Cadastrar <span>Novo Produto</span></h2>
+                    <p>Adicione novas peças ao catálogo com upload direto para a nuvem.</p>
+                </div>
+
+                <form id="form-novo-produto" class="admin-card" enctype="multipart/form-data">
+                    <div class="admin-form-grid">
+                        <div class="form-control">
+                            <label for="prod-nome">Nome do Produto</label>
+                            <input type="text" id="prod-nome" required placeholder="Ex: Camiseta Oversized Luxury">
+                        </div>
+                        <div class="form-control">
+                            <label for="prod-categoria">Categoria</label>
+                            <select id="prod-categoria" required>
+                                <option value="">Selecione...</option>
+                                <option value="Camisetas">Camisetas</option>
+                                <option value="Jaquetas">Jaquetas</option>
+                                <option value="Calças">Calças</option>
+                                <option value="Acessórios">Acessórios</option>
+                            </select>
+                        </div>
+                        <div class="form-control">
+                            <label for="prod-preco">Preço de Venda (R$)</label>
+                            <input type="number" id="prod-preco" step="0.01" required placeholder="149.90">
+                        </div>
+                        <div class="form-control">
+                            <label for="prod-preco-antigo">Preço Antigo / Risurado (R$ - Opcional)</label>
+                            <input type="number" id="prod-preco-antigo" step="0.01" placeholder="199.90">
+                        </div>
+                        <div class="form-control">
+                            <label for="prod-estoque">Estoque Inicial</label>
+                            <input type="number" id="prod-estoque" required placeholder="30">
+                        </div>
+                        <div class="form-control">
+                            <label for="prod-imagem">Foto do Produto</label>
+                            <input type="file" id="prod-imagem" accept="image/*" required>
+                        </div>
+                    </div>
+                    <div class="form-control" style="margin-top: 20px;">
+                        <label for="prod-descricao">Descrição do Produto</label>
+                        <textarea id="prod-descricao" rows="4" placeholder="Detalhes sobre o tecido, caimento e diferenciais premium..."></textarea>
+                    </div>
+                    <button type="submit" class="admin-btn">
+                        <i class="fas fa-cloud-upload-alt"></i> Publicar Produto no Império
+                    </button>
+                </form>
+            </section>
+
+            <section id="panel-catalogo" class="admin-section">
+                <div class="admin-header">
+                    <h2>Gerenciar <span>Catálogo Atual</span></h2>
+                    <p>Visualize os produtos ativos no seu banco de dados PostgreSQL.</p>
+                </div>
+                <div class="admin-card">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Foto</th>
+                                <th>Nome</th>
+                                <th>Categoria</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-produtos-lista">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="panel-pedidos" class="admin-section">
+                <div class="admin-header">
+                    <h2>Gestão de <span>Pedidos</span></h2>
+                    <p>Monitore as compras dos clientes e atualize o status de envio.</p>
+                </div>
+                <div class="admin-card">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID Pedido</th>
+                                <th>Cliente</th>
+                                <th>Data</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#10244</td>
+                                <td>Hellio Silva</td>
+                                <td>29/05/2026</td>
+                                <td>R$ 369,80</td>
+                                <td><span class="status-badge pendente">Pendente</span></td>
+                                <td><button class="table-action-btn edit"><i class="fas fa-check"></i> Aprovar</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <div id="modal-editar" class="admin-modal">
+        <div class="modal-content admin-card">
+            <div class="modal-header-inline">
+                <h3>Editar <span>Produto</span></h3>
+                <button class="close-modal-btn" onclick="fecharModalEditar()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="form-editar-produto" enctype="multipart/form-data" style="margin-top: 20px;">
+                <input type="hidden" id="edit-prod-id"> <div class="admin-form-grid">
+                    <div class="form-control">
+                        <label for="edit-prod-name">Nome do Produto</label>
+                        <input type="text" id="edit-prod-name" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="edit-prod-categoria">Categoria</label>
+                        <select id="edit-prod-categoria" required>
+                            <option value="Camisetas">Camisetas</option>
+                            <option value="Jaquetas">Jaquetas</option>
+                            <option value="Calças">Calças</option>
+                            <option value="Moletons">Moletons</option>
+                            <option value="Acessórios">Acessórios</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label for="edit-prod-preco">Preço de Venda (R$)</label>
+                        <input type="number" id="edit-prod-preco" step="0.01" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="edit-prod-preco-antigo">Preço Antigo (R$ - Opcional)</label>
+                        <input type="number" id="edit-prod-preco-antigo" step="0.01">
+                    </div>
+                    <div class="form-control">
+                        <label for="edit-prod-estoque">Estoque Atual</label>
+                        <input type="number" id="edit-prod-estoque" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="edit-prod-imagem">Substituir Foto (Deixe em branco para manter a atual)</label>
+                        <input type="file" id="edit-prod-imagem" accept="image/*">
+                    </div>
+                </div>
+                <div class="form-control" style="margin-top: 20px;">
+                    <label for="edit-prod-descricao">Descrição do Produto</label>
+                    <textarea id="edit-prod-descricao" rows="4"></textarea>
+                </div>
+                <div style="display: flex; gap: 15px; margin-top: 25px;">
+                    <button type="submit" class="admin-btn" style="margin: 0; flex: 1;">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                    <button type="button" class="admin-btn" onclick="fecharModalEditar()" style="margin: 0; background-color: #666;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="js/admin.js"></script>
+</body>
+</html>

@@ -32,11 +32,9 @@ function mudarQtd(id, tamanho, delta) {
 
 // Remover item na página do carrinho
 function removerItemCarrinho(id, tamanho) {
-    let cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
-    cart = cart.filter(i => !(i.id === id && i.tamanho === tamanho));
-    localStorage.setItem("imperio_cart", JSON.stringify(cart));
-    atualizarContadores();
-    renderizarCarrinhoPagina();
+    if (typeof removerDoCarrinhoGlobal === 'function') {
+        removerDoCarrinhoGlobal(id, tamanho);
+    }
 }
 
 // Renderizar itens na página carrinho.html
@@ -72,7 +70,12 @@ function renderizarCarrinhoPagina() {
         return `
             <div class="cart-item">
                 <div class="cart-item-info">
-                    <div class="cart-item-img">${prod.icone}</div>
+                    <div class="cart-item-img" style="display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; background: #f4f6f9; border-radius: 8px;">
+                        ${prod.imagem_url 
+                            ? `<img src="${prod.imagem_url}" style="width:100%; height:100%; object-fit:cover;">` 
+                            : `<span style="font-size:2rem;">👕</span>`
+                        }
+                    </div>
                     <div class="cart-item-details">
                         <h3>${prod.nome}</h3>
                         <p>Tamanho: ${item.tamanho}</p>
