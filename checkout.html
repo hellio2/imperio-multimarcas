@@ -84,11 +84,13 @@
             } catch (e) { container.innerHTML = '<p style="color: red;">Erro ao calcular frete.</p>'; }
         }
 
-        // ==========================================
-        // INICIALIZAÇÃO DO MERCADO PAGO BRICKS
-        // ==========================================
+        // =========================================================
+        // INICIALIZAÇÃO DO MERCADO PAGO BRICKS (COM DIAGNÓSTICO)
+        // =========================================================
         document.addEventListener("DOMContentLoaded", async () => {
             const tokenAuth = localStorage.getItem('imperio_token');
+            const containerBrick = document.getElementById('paymentBrick_container');
+
             if (!tokenAuth) {
                 alert("Sessão expirada. Faça login para continuar.");
                 window.location.href = 'login.html';
@@ -99,30 +101,45 @@
                 // 1. Pega a Chave Pública do Backend
                 const configRes = await fetch('/api/config/mp');
                 const configData = await configRes.json();
+                
+                // Validação de segurança: Verifica se a chave realmente chegou
+                if (!configData.publicKey) {
+                    throw new Error("Chave Pública não encontrada. Você reiniciou o servidor após alterar o .env?");
+                }
+                
                 const mp = new MercadoPago(configData.publicKey, { locale: 'pt-BR' });
 
-                // 2. Consulta o valor total real do carrinho no Backend
+                // 2. Consulta o carrinho
                 const cartRes = await fetch('/api/carrinho', { headers: { 'Authorization': `Bearer ${tokenAuth}` }});
                 const cartData = await cartRes.json();
                 
-                if(cartData.length === 0) {
-                    document.getElementById('paymentBrick_container').innerHTML = "<p>Seu carrinho está vazio.</p>";
+                // Validação de segurança: Verifica se o token expirou ou deu erro
+                if (cartData.erro) {
+                    throw new Error("Falha ao ler carrinho: " + cartData.erro);
+                }
+
+                if(!Array.isArray(cartData) || cartData.length === 0) {
+                    containerBrick.innerHTML = "<p style='text-align:center; padding: 20px;'>Seu carrinho está vazio.</p>";
                     return;
                 }
 
-                // Soma o total (Sem frete para simplificar neste primeiro momento)
-                const totalAmount = cartData.reduce((acc, item) => acc + (parseFloat(item.preco) * parseInt(item.qtd)), 0);
+                // Soma o total validando se é um número (evita erro NaN)
+                const totalAmount = cartData.reduce((acc, item) => {
+                    const preco = parseFloat(item.preco);
+                    const qtd = parseInt(item.qtd);
+                    return acc + (isNaN(preco) ? 0 : preco * qtd);
+                }, 0);
 
-                // 3. Constrói e renderiza o formulário de pagamento (Brick)
+                if (totalAmount <= 0) {
+                    throw new Error("O valor total do carrinho é inválido ou zero.");
+                }
+
+                // 3. Constrói o formulário
                 const bricksBuilder = mp.bricks();
-                
-                // Limpa o aviso de "Carregando"
-                document.getElementById('paymentBrick_container').innerHTML = "";
+                containerBrick.innerHTML = ""; // Limpa a tela de loading
 
                 await bricksBuilder.create('payment', 'paymentBrick_container', {
-                    initialization: {
-                        amount: totalAmount // O Brick precisa saber o valor para calcular parcelas
-                    },
+                    initialization: { amount: totalAmount },
                     customization: {
                         paymentMethods: {
                             ticket: "all",
@@ -133,7 +150,6 @@
                     callbacks: {
                         onReady: () => { console.log('Brick carregado com sucesso!'); },
                         onSubmit: (paymentData) => {
-                            // Esta função roda quando o cliente clica no botão "Pagar" dentro do Brick
                             return new Promise((resolve, reject) => {
                                 fetch('/api/pagamento/processar', {
                                     method: 'POST',
@@ -146,29 +162,33 @@
                                 .then((res) => res.json())
                                 .then((data) => {
                                     if (data.sucesso) {
-                                        // Pagamento aprovado ou PIX gerado! Vai para a página de sucesso registrar o pedido.
                                         window.location.href = 'sucesso.html';
                                         resolve();
                                     } else {
-                                        alert("Erro: " + data.erro);
+                                        alert("Aviso: " + (data.erro || "Falha no pagamento"));
                                         reject();
                                     }
                                 })
                                 .catch((error) => {
-                                    alert("Falha de conexão.");
+                                    alert("Falha de conexão com o banco.");
                                     reject();
                                 });
                             });
                         },
                         onError: (error) => {
-                            console.error("Erro no Brick:", error);
+                            console.error("Erro interno do Brick:", error);
                         }
                     }
                 });
 
             } catch (error) {
-                console.error(error);
-                document.getElementById('paymentBrick_container').innerHTML = "<p style='color:red;'>Erro ao carregar módulo de pagamento. Tente recarregar a página.</p>";
+                // AGORA O ERRO EXATO VAI APARECER NO CONSOLE (F12) E NA TELA
+                console.error("🕵️‍♂️ Diagnóstico de Erro:", error.message || error);
+                document.getElementById('paymentBrick_container').innerHTML = `
+                    <div style="padding: 20px; text-align:center; border: 1px solid #dc3545; border-radius: 8px; background: #fff8f8;">
+                        <h4 style="color: #dc3545; margin-bottom: 10px;"><i class="fas fa-exclamation-triangle"></i> Falha na Integração</h4>
+                        <p style="color: #666; font-size: 0.9rem;">${error.message || "Erro desconhecido. Abra o F12 para ver o console."}</p>
+                    </div>`;
             }
         });
     </script>
