@@ -144,7 +144,7 @@
                         paymentMethods: {
                             ticket: "all",
                             creditCard: "all",
-                            pix: "all"
+                            bankTransfer: "all"
                         }
                     },
                     callbacks: {
@@ -162,6 +162,9 @@
                                 .then((res) => res.json())
                                 .then((data) => {
                                     if (data.sucesso) {
+                                        // GUARDA OS DADOS DO PIX NA MEMÓRIA ANTES DE MUDAR DE PÁGINA
+                                        sessionStorage.setItem('imperio_mp_result', JSON.stringify(data));
+                                        
                                         window.location.href = 'sucesso.html';
                                         resolve();
                                     } else {

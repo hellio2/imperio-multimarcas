@@ -44,25 +44,48 @@
                 if (resposta.ok) {
                     const dados = await resposta.json();
                     
-                    // Limpa o carrinho local do navegador
+                    // Limpa o carrinho
                     localStorage.removeItem('imperio_cart');
                     localStorage.removeItem('imperio_coupon');
 
-                    // Atualiza a tela com a comemoração
+                    // ==========================================
+                    // LÓGICA VISUAL DO PIX
+                    // ==========================================
+                    const mpResultStr = sessionStorage.getItem('imperio_mp_result');
+                    let pixHTML = "";
+
+                    if (mpResultStr) {
+                        const mpResult = JSON.parse(mpResultStr);
+                        
+                        if (mpResult.metodo === 'pix' && mpResult.pix) {
+                            pixHTML = `
+                                <div style="margin-top: 25px; padding: 25px; background: #fdfdfd; border: 2px dashed #009ee3; border-radius: 8px;">
+                                    <h3 style="margin-bottom: 15px; color: #009ee3; font-weight: 900;"><i class="fab fa-pix"></i> Pague agora via Pix</h3>
+                                    <p style="font-size: 0.9rem; margin-bottom: 15px;">Escaneie o QR Code abaixo no aplicativo do seu banco:</p>
+                                    
+                                    <img src="data:image/jpeg;base64,${mpResult.pix.qr_code_base64}" style="max-width: 200px; margin: 0 auto 20px auto; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                                    
+                                    <p style="font-size: 0.9rem; margin-bottom: 5px; color:#666;">Ou copie o código "Copia e Cola":</p>
+                                    <input type="text" value="${mpResult.pix.qr_code}" id="pixCode" readonly style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px; font-family: monospace; background: #f4f6f9;">
+                                    
+                                    <button onclick="document.getElementById('pixCode').select(); document.execCommand('copy'); this.innerHTML='<i class=\\'fas fa-check\\'></i> Copiado!'; this.style.background='#28a745';" style="background: #111; color: #fff; border: none; padding: 12px 25px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.3s; width: 100%;">
+                                        <i class="far fa-copy"></i> Copiar Código Pix
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    // Monta a tela final
                     box.innerHTML = `
                         <i class="fas fa-check-circle success-icon"></i>
-                        <h1>Compra Aprovada!</h1>
-                        <p>Seu pedido <strong>#${dados.pedido_id}</strong> foi confirmado com sucesso. Você receberá as atualizações de rastreio em breve.</p>
-                        <a href="index.html" class="hero-btn" style="display:inline-block; margin-top: 10px;">Voltar para a Loja</a>
-                    `;
-                } else {
-                    box.innerHTML = `
-                        <i class="fas fa-exclamation-triangle success-icon" style="color: #dc3545;"></i>
-                        <h1>Oops!</h1>
-                        <p>Ocorreu um erro ao registrar seu pedido. Entre em contato com o suporte.</p>
-                        <a href="carrinho.html" class="hero-btn" style="display:inline-block; margin-top: 10px;">Voltar ao Carrinho</a>
+                        <h1>Pedido Registrado!</h1>
+                        <p>Seu pedido <strong>#${dados.pedido_id}</strong> foi gerado com sucesso.</p>
+                        ${pixHTML}
+                        <a href="index.html" class="hero-btn" style="display:inline-block; margin-top: 20px;">Voltar para a Loja</a>
                     `;
                 }
+
             } catch (e) {
                 box.innerHTML = `<h1>Erro de conexão</h1><p>Não foi possível comunicar com o servidor.</p>`;
             }

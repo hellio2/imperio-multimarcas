@@ -329,8 +329,26 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 
         const payment = await client.create({ body: paymentBody });
 
+        // 6. Verifica o status real
         if (payment.status === 'approved' || payment.status === 'in_process' || payment.status === 'pending') {
-            res.status(200).json({ sucesso: true, id: payment.id, status: payment.status });
+            
+            // CAPTURA DE DADOS DO PIX
+            let pixResponse = null;
+            if (payment.payment_method_id === 'pix' && payment.point_of_interaction) {
+                pixResponse = {
+                    qr_code: payment.point_of_interaction.transaction_data.qr_code,
+                    qr_code_base64: payment.point_of_interaction.transaction_data.qr_code_base64
+                };
+            }
+
+            res.status(200).json({ 
+                sucesso: true, 
+                id: payment.id, 
+                status: payment.status, 
+                metodo: payment.payment_method_id,
+                pix: pixResponse // Manda o QR Code para o Frontend
+            });
+
         } else {
             res.status(400).json({ erro: `Recusado: ${payment.status_detail}` });
         }
