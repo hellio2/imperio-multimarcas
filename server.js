@@ -380,9 +380,10 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
     try {
         const client = new Payment(clienteMercadoPago);
+        
+        // Pega todos os dados do corpo da requisição (do Brick e dos inputs manuais)
         const { transaction_amount, token, installments, payment_method_id, issuer_id, payer } = req.body;
 
-        // 1. Busca os itens do carrinho no banco para enviar ao MP (Melhora Antifraude)
         const cartRes = await pool.query(
             `SELECT c.quantidade, p.nome, p.preco, p.categoria 
              FROM carrinho c JOIN produtos p ON c.produto_id = p.id 
@@ -391,38 +392,36 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 
         const itensDoCarrinho = cartRes.rows.map(item => ({
             title: item.nome,
-            description: `Compra de ${item.nome} no Império Multimarcas`, // Atende o requisito "Descrição do item"
+            description: `Compra de ${item.nome} no Império Multimarcas`,
             category_id: item.categoria || "fashion",
             quantity: Number(item.quantidade),
             unit_price: Number(item.preco)
         }));
 
-        // 2. Gera uma referência externa única (Atende o requisito "Referência Externa")
         const referenciaExterna = `PEDIDO_USER${req.usuario.id}_${Date.now()}`;
 
-        // 3. Monta o Payload Nível Máximo de Qualidade
+        // Construção Dinâmica e Flexível do Payer
         const paymentBody = {
             transaction_amount: Number(transaction_amount),
             description: 'Pedido - Império Multimarcas',
-            statement_descriptor: 'IMPERIOMULTI', // Atende o requisito "Fatura do Cartão"
+            statement_descriptor: 'IMPERIOMULTI',
             external_reference: referenciaExterna, 
-            notification_url: 'https://imperio-multimarcas.onrender.com/api/webhook', // Atende o requisito "Webhooks"
+            notification_url: 'https://imperio-multimarcas.onrender.com/api/webhook',
             payment_method_id: payment_method_id,
-            additional_info: {
-                items: itensDoCarrinho
-            },
+            additional_info: { items: itensDoCarrinho },
             payer: {
                 email: req.usuario.email || payer?.email,
-                first_name: payer?.first_name,
-                last_name: payer?.last_name,
+                first_name: payer?.first_name || req.body.nome || "Cliente",
+                last_name: payer?.last_name || req.body.sobrenome || "",
                 identification: payer?.identification,
+                // Tenta pegar o endereço do Brick ou dos campos customizados soltos no req.body
                 address: payer?.address || {
-                    zip_code: "01001000",
-                    street_name: "Não informado",
-                    street_number: "S/N",
-                    neighborhood: "Não informado",
-                    city: "Não informado",
-                    federal_unit: "SP"
+                    zip_code: req.body.cep || "29730000",
+                    street_name: req.body.rua || "Endereço Principal",
+                    street_number: req.body.numero || "S/N",
+                    neighborhood: req.body.bairro || "Centro",
+                    city: req.body.cidade || "Cidade",
+                    federal_unit: req.body.estado || "ES"
                 }
             }
         };
@@ -431,23 +430,30 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
         if (installments) paymentBody.installments = Number(installments);
         if (issuer_id) paymentBody.issuer_id = issuer_id;
 
-        // Cria uma chave única baseada no tempo e no ID do usuário para evitar cobrança duplicada
         const chaveIdempotencia = `IDEMP_${req.usuario.id}_${Date.now()}`;
 
-        // Envia o pagamento com o cabeçalho de segurança exigido pela API avançada
         const payment = await client.create({ 
             body: paymentBody,
-            requestOptions: {
-                idempotencyKey: chaveIdempotencia
-            }
+            requestOptions: { idempotencyKey: chaveIdempotencia }
         });
 
         if (payment.status === 'approved' || payment.status === 'in_process' || payment.status === 'pending') {
+            
             let pixResponse = null;
+            let boletoResponse = null;
+
+            // Tratamento Específico para Pix
             if (payment.payment_method_id === 'pix' && payment.point_of_interaction) {
                 pixResponse = {
                     qr_code: payment.point_of_interaction.transaction_data.qr_code,
                     qr_code_base64: payment.point_of_interaction.transaction_data.qr_code_base64
+                };
+            } 
+            // Tratamento Específico para Boleto (Ticket)
+            else if (payment.payment_type_id === 'ticket') {
+                boletoResponse = {
+                    url: payment.transaction_details?.external_resource_url, // Link do PDF do Boleto Real
+                    linha_digitavel: payment.barcode?.content // Código de barras
                 };
             }
 
@@ -456,7 +462,8 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
                 id: payment.id, 
                 status: payment.status, 
                 metodo: payment.payment_method_id,
-                pix: pixResponse 
+                pix: pixResponse,
+                boleto: boletoResponse // Envia o boleto para o Frontend montar o botão de Download
             });
         } else {
             res.status(400).json({ erro: `Recusado: ${payment.status_detail}` });
