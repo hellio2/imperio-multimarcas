@@ -431,7 +431,16 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
         if (installments) paymentBody.installments = Number(installments);
         if (issuer_id) paymentBody.issuer_id = issuer_id;
 
-        const payment = await client.create({ body: paymentBody });
+        // Cria uma chave única baseada no tempo e no ID do usuário para evitar cobrança duplicada
+        const chaveIdempotencia = `IDEMP_${req.usuario.id}_${Date.now()}`;
+
+        // Envia o pagamento com o cabeçalho de segurança exigido pela API avançada
+        const payment = await client.create({ 
+            body: paymentBody,
+            requestOptions: {
+                idempotencyKey: chaveIdempotencia
+            }
+        });
 
         if (payment.status === 'approved' || payment.status === 'in_process' || payment.status === 'pending') {
             let pixResponse = null;
