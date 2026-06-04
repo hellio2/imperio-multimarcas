@@ -375,19 +375,22 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 */
 
 // =========================================================
-// ROTA DE PAGAMENTO (CHECKOUT BRICKS TRANPARENTE - PRODUÇÃO)
+// ROTA DE PAGAMENTO (CHECKOUT BRICKS - HIPER RAIO-X PRODUÇÃO)
 // =========================================================
 app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
     try {
         const client = new Payment(clienteMercadoPago);
         const { transaction_amount, token, installments, payment_method_id, issuer_id, payer } = req.body;
 
-        // =======================================================
-        // 1. SANITIZAÇÃO DE DADOS (O Segredo da Aprovação)
-        // =======================================================
+        // 🚨 LOG 1: MONITORAMENTO DE INPUT DO FRONTEND
+        console.log("\n=======================================================");
+        console.log("📥 [RAIO-X FRONTEND] PAYLOAD BRUTO DO BRICK:");
+        console.log(JSON.stringify(req.body, null, 2));
+        console.log("=======================================================\n");
+
+        // 1. Sanitização Robusta de Endereço e Dados Cadastrais
         const rawAddress = payer?.address || req.body;
         
-        // A) Converte Estado por extenso para Sigla (Ex: "Espírito Santo" -> "ES")
         let uf = rawAddress.federal_unit || rawAddress.estado || "SP";
         const estadosBR = {
             "acre": "AC", "alagoas": "AL", "amapá": "AP", "amazonas": "AM", "bahia": "BA",
@@ -398,29 +401,30 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
             "rondônia": "RO", "roraima": "RR", "santa catarina": "SC", "são paulo": "SP",
             "sergipe": "SE", "tocantins": "TO"
         };
-        // Se a pessoa digitou mais de 2 letras, busca no dicionário ou força as 2 primeiras letras
         if (uf.length > 2) {
             uf = estadosBR[uf.toLowerCase().trim()] || uf.substring(0, 2).toUpperCase();
         }
 
-        // B) Limpa o Número (Extrai apenas os dígitos numéricos de "108, Casa")
         let numeroBruto = rawAddress.street_number || rawAddress.numero || "S/N";
         const numerosExtraidos = String(numeroBruto).match(/\d+/);
-        const numeroLimpo = numerosExtraidos ? numerosExtraidos[0] : "S/N";
+        const numeroLimpo = numerosExtraidos ? numerosExtraidos[0] : "1";
 
-        // C) Monta o Endereço Perfeito para o Banco Central
         const enderecoFormatado = {
             zip_code: String(rawAddress.zip_code || rawAddress.cep || "01001000").replace(/\D/g, ''),
-            street_name: rawAddress.street_name || rawAddress.rua || "Não informado",
+            street_name: String(rawAddress.street_name || rawAddress.rua || "Rua Principal").trim(),
             street_number: numeroLimpo,
-            neighborhood: rawAddress.neighborhood || rawAddress.bairro || "Não informado",
-            city: rawAddress.city || rawAddress.cidade || "Não informado",
-            federal_unit: uf.toUpperCase()
+            neighborhood: String(rawAddress.neighborhood || rawAddress.bairro || "Centro").trim(),
+            city: String(rawAddress.city || rawAddress.cidade || "Cidade").trim(),
+            federal_unit: uf.toUpperCase().trim()
         };
 
-        // =======================================================
-        // 2. MONTAGEM DO PEDIDO
-        // =======================================================
+        // Separando Nome e Sobrenome de forma segura
+        const nomeCompleto = (payer?.first_name || req.body.nome || "Cliente Teste").trim();
+        const partesNome = nomeCompleto.split(" ");
+        const firstName = partesNome[0];
+        const lastName = partesNome.slice(1).join(" ") || "Silva";
+
+        // 2. Busca e montagem do carrinho
         const cartRes = await pool.query(
             `SELECT c.quantidade, p.nome, p.preco, p.categoria 
              FROM carrinho c JOIN produtos p ON c.produto_id = p.id 
@@ -429,7 +433,7 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 
         const itensDoCarrinho = cartRes.rows.map(item => ({
             title: item.nome,
-            description: `Compra de ${item.nome} no Império Multimarcas`,
+            description: `Roupas - ${item.nome}`,
             category_id: item.categoria || "fashion",
             quantity: Number(item.quantidade),
             unit_price: Number(item.preco)
@@ -437,6 +441,7 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 
         const referenciaExterna = `PEDIDO_USER${req.usuario.id}_${Date.now()}`;
 
+        // 3. Montagem do Payload Final estruturando os nós adicionais exigidos contra fraude
         const paymentBody = {
             transaction_amount: Number(transaction_amount),
             description: 'Pedido - Império Multimarcas',
@@ -444,19 +449,39 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
             external_reference: referenciaExterna, 
             notification_url: 'https://imperio-multimarcas.onrender.com/api/webhook',
             payment_method_id: payment_method_id,
-            additional_info: { items: itensDoCarrinho },
+            additional_info: { 
+                items: itensDoCarrinho,
+                payer: {
+                    first_name: firstName,
+                    last_name: lastName,
+                    address: {
+                        zip_code: enderecoFormatado.zip_code,
+                        street_name: enderecoFormatado.street_name,
+                        street_number: Number(enderecoFormatado.street_number)
+                    }
+                }
+            },
             payer: {
-                email: req.usuario.email || payer?.email,
-                first_name: payer?.first_name || req.body.nome || "Cliente",
-                last_name: payer?.last_name || req.body.sobrenome || "",
-                identification: payer?.identification,
-                address: enderecoFormatado // <--- Injetamos o endereço limpo aqui
+                email: (req.usuario.email || payer?.email || "cliente@email.com").trim(),
+                first_name: firstName,
+                last_name: lastName,
+                identification: {
+                    type: payer?.identification?.type || "CPF",
+                    number: String(payer?.identification?.number || "").replace(/\D/g, '')
+                },
+                address: enderecoFormatado
             }
         };
 
         if (token) paymentBody.token = token;
         if (installments) paymentBody.installments = Number(installments);
         if (issuer_id) paymentBody.issuer_id = issuer_id;
+
+        // 🚨 LOG 2: MONITORAMENTO DO PAYLOAD TRATADO ANTES DO ENVIO
+        console.log("\n=======================================================");
+        console.log("📤 [RAIO-X BACKEND] PAYLOAD SANITIZADO INDO PARA O MP:");
+        console.log(JSON.stringify(paymentBody, null, 2));
+        console.log("=======================================================\n");
 
         const chaveIdempotencia = `IDEMP_${req.usuario.id}_${Date.now()}`;
 
@@ -465,8 +490,18 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
             requestOptions: { idempotencyKey: chaveIdempotencia }
         });
 
+        // 🚨 LOG 3: RESPOSTA CRUA DO MERCADO PAGO DO SEU AMBIENTE
+        console.log("\n=======================================================");
+        console.log("💥 [RAIO-X MERCADO PAGO] RESPOSTA COMPLETA DA FINANCIAL:");
+        console.log(`Status Obtido: ${payment.status}`);
+        console.log(`Detalhe do Status: ${payment.status_detail}`);
+        if (payment.api_response) {
+            console.log("Corpo de Resposta do Servidor do MP:");
+            console.log(JSON.stringify(payment.api_response, null, 2));
+        }
+        console.log("=======================================================\n");
+
         if (payment.status === 'approved' || payment.status === 'in_process' || payment.status === 'pending') {
-            
             let pixResponse = null;
             let boletoResponse = null;
 
@@ -496,7 +531,9 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
         }
 
     } catch (err) {
-        console.error("Erro no Processamento do Brick:", err.message || err);
+        console.error("\n❌ [RAIO-X ERROR] FALHA CRÍTICA NO CATCH DA ROTA:");
+        console.error(err.message || err);
+        if (err.cause) console.error("Causa:", JSON.stringify(err.cause, null, 2));
         res.status(500).json({ erro: 'Erro interno ao processar o pagamento.' });
     }
 });
