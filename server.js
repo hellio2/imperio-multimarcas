@@ -292,9 +292,9 @@ app.post('/api/frete', async (req, res) => {
 app.get('/api/config/mp', (req, res) => {
     res.json({ publicKey: process.env.MP_PUBLIC_KEY });
 });
-
+/*
 // =========================================================
-// ROTA DE PAGAMENTO (CHECKOUT BRICKS TRANPARENTE)
+// ROTA DE PAGAMENTO (CHECKOUT BRICKS TRANPARENTE) -- TESTE
 // =========================================================
 app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
     try {
@@ -347,6 +347,77 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
                 status: payment.status, 
                 metodo: payment.payment_method_id,
                 pix: pixResponse // Manda o QR Code para o Frontend
+            });
+
+        } else {
+            res.status(400).json({ erro: `Recusado: ${payment.status_detail}` });
+        }
+
+    } catch (err) {
+        console.error("Erro no Processamento do Brick:", err.message || err);
+        res.status(500).json({ erro: 'Erro interno ao processar o pagamento. Verifique o terminal.' });
+    }
+});
+*/
+
+// =========================================================
+// ROTA DE PAGAMENTO (CHECKOUT BRICKS TRANPARENTE - PRODUÇÃO)
+// =========================================================
+app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
+    try {
+        const client = new Payment(clienteMercadoPago);
+        
+        // Pega todos os dados REAIS enviados pelo Checkout Bricks
+        const { transaction_amount, token, installments, payment_method_id, issuer_id, payer } = req.body;
+
+        const paymentBody = {
+            transaction_amount: Number(transaction_amount),
+            description: 'Pedido - Império Multimarcas',
+            payment_method_id: payment_method_id,
+            payer: {
+                // Pega o e-mail real da conta logada no site ou o digitado no Brick
+                email: req.usuario.email || payer?.email,
+                first_name: payer?.first_name,
+                last_name: payer?.last_name,
+                identification: payer?.identification,
+                // O Brick coleta o endereço para boletos automaticamente.
+                // Mantemos um fallback genérico apenas por segurança para não travar a API.
+                address: payer?.address || {
+                    zip_code: "01001000",
+                    street_name: "Não informado",
+                    street_number: "S/N",
+                    neighborhood: "Não informado",
+                    city: "Não informado",
+                    federal_unit: "SP"
+                }
+            }
+        };
+
+        // Adiciona dados de cartão somente se o cliente escolheu cartão
+        if (token) paymentBody.token = token;
+        if (installments) paymentBody.installments = Number(installments);
+        if (issuer_id) paymentBody.issuer_id = issuer_id;
+
+        const payment = await client.create({ body: paymentBody });
+
+        // Verifica o status real
+        if (payment.status === 'approved' || payment.status === 'in_process' || payment.status === 'pending') {
+            
+            // CAPTURA DE DADOS DO PIX
+            let pixResponse = null;
+            if (payment.payment_method_id === 'pix' && payment.point_of_interaction) {
+                pixResponse = {
+                    qr_code: payment.point_of_interaction.transaction_data.qr_code,
+                    qr_code_base64: payment.point_of_interaction.transaction_data.qr_code_base64
+                };
+            }
+
+            res.status(200).json({ 
+                sucesso: true, 
+                id: payment.id, 
+                status: payment.status, 
+                metodo: payment.payment_method_id,
+                pix: pixResponse 
             });
 
         } else {
