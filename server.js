@@ -377,13 +377,19 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 // =========================================================
 // ROTA DE PAGAMENTO (CHECKOUT BRICKS TRANPARENTE - PRODUÇÃO)
 // =========================================================
+
 app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
     try {
         const client = new Payment(clienteMercadoPago);
-        
-        // Pega todos os dados do corpo da requisição (do Brick e dos inputs manuais)
         const { transaction_amount, token, installments, payment_method_id, issuer_id, payer } = req.body;
 
+        // 🚨 1. RAIO-X DO FRONTEND: O que a tela realmente enviou pro Backend?
+        console.log("\n=======================================================");
+        console.log("📥 DADOS RECEBIDOS DO CHECKOUT BRICK:");
+        console.log(JSON.stringify(req.body, null, 2));
+        console.log("=======================================================\n");
+
+        // ... (mantenha o código da consulta do carrinho e referenciaExterna iguais) ...
         const cartRes = await pool.query(
             `SELECT c.quantidade, p.nome, p.preco, p.categoria 
              FROM carrinho c JOIN produtos p ON c.produto_id = p.id 
@@ -437,7 +443,18 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
             requestOptions: { idempotencyKey: chaveIdempotencia }
         });
 
+        // 🚨 2. RAIO-X DO MERCADO PAGO: A resposta brutal e sem filtros da API
+        console.log("\n=======================================================");
+        console.log("📤 RESPOSTA OFICIAL DO MERCADO PAGO:");
+        console.log(`Status: ${payment.status} | Detalhe: ${payment.status_detail}`);
+        // Se o MP enviou avisos sobre o endereço ou CPF, eles estarão aqui:
+        if (payment.api_response) {
+            console.log(JSON.stringify(payment.api_response, null, 2));
+        }
+        console.log("=======================================================\n");
+
         if (payment.status === 'approved' || payment.status === 'in_process' || payment.status === 'pending') {
+        // ... (mantenha o restante do código igual) ...
             
             let pixResponse = null;
             let boletoResponse = null;
