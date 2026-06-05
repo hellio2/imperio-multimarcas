@@ -3,7 +3,7 @@
     --cor-card: #141414;
     --cor-texto-principal: #ffffff;
     --cor-texto-secundario: #aaaaaa;
-    --cor-primaria: #ffd700; //Amarelo Império
+    --cor-primaria: #ffd700; //Amarelo Equilíbrio
     --cor-primaria-hover: #e6c200;
     --cor-preto-puro: #000000;
     --cor-borda: #262626;
@@ -21,7 +21,7 @@
     --cor-texto-secundario: #666666; /* Cinza sofisticado para descrições */
     
     /* Cores da Marca (Preto e Amarelo) */
-    --cor-primaria: #ffd700; /* Amarelo Império */
+    --cor-primaria: #ffd700; /* Amarelo Equilíbrio */
     --cor-primaria-hover: #e6c200;
     --cor-preto-puro: #000000; /* Usado no Header, Footer e Botões principais */
     

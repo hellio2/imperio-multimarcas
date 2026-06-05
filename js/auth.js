@@ -1,7 +1,7 @@
 // Verifica o estado da sessão assim que a página abre
 document.addEventListener("DOMContentLoaded", () => {
-    const token = localStorage.getItem('imperio_token');
-    const userJson = localStorage.getItem('imperio_user');
+    const token = localStorage.getItem('equilibrio_token');
+    const userJson = localStorage.getItem('equilibrio_user');
 
     const panelDashboard = document.getElementById('panel-dashboard');
     const panelAuthForms = document.getElementById('panel-auth-forms');
@@ -35,10 +35,10 @@ function alternarAba(abaDestino) {
 // FUNÇÃO DE LOGOUT ATUALIZADA (LIMPA TUDO)
 // ==========================================
 function fazerLogout() {
-    localStorage.removeItem('imperio_token');
-    localStorage.removeItem('imperio_user');
-    localStorage.removeItem('imperio_cart'); 
-    localStorage.removeItem('imperio_favorites'); // CORREÇÃO: Agora os favoritos também são limpos ao sair
+    localStorage.removeItem('equilibrio_token');
+    localStorage.removeItem('equilibrio_user');
+    localStorage.removeItem('equilibrio_cart'); 
+    localStorage.removeItem('equilibrio_favorites'); // CORREÇÃO: Agora os favoritos também são limpos ao sair
     window.location.href = 'index.html';
 }
 
@@ -98,8 +98,8 @@ document.getElementById('form-login').addEventListener('submit', async (e) => {
             feedback.textContent = 'Acesso autorizado! Sincronizando sessão...';
             feedback.className = 'form-feedback success';
             
-            localStorage.setItem('imperio_token', dados.token);
-            localStorage.setItem('imperio_user', JSON.stringify(dados.usuario));
+            localStorage.setItem('equilibrio_token', dados.token);
+            localStorage.setItem('equilibrio_user', JSON.stringify(dados.usuario));
             
             setTimeout(() => { window.location.href = 'index.html'; }, 1000);
         } else {

@@ -1,6 +1,6 @@
 // Adicionar item ao carrinho em qualquer página
 function adicionarAoCarrinhoGlobal(id, qtd = 1, tamanho = "M") {
-    let cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
+    let cart = JSON.parse(localStorage.getItem("equilibrio_cart") || "[]");
     const itemExistente = cart.find(item => item.id === id && item.tamanho === tamanho);
     
     if (itemExistente) {
@@ -9,14 +9,14 @@ function adicionarAoCarrinhoGlobal(id, qtd = 1, tamanho = "M") {
         cart.push({ id, qtd, tamanho });
     }
     
-    localStorage.setItem("imperio_cart", JSON.stringify(cart));
+    localStorage.setItem("equilibrio_cart", JSON.stringify(cart));
     atualizarContadores();
-    alert("Produto adicionado ao carrinho do Império!");
+    alert("Produto adicionado ao carrinho do Equilíbrio!");
 }
 
 // Alterar quantidade na página do carrinho
 function mudarQtd(id, tamanho, delta) {
-    let cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
+    let cart = JSON.parse(localStorage.getItem("equilibrio_cart") || "[]");
     const item = cart.find(i => i.id === id && i.tamanho === tamanho);
     
     if (item) {
@@ -24,7 +24,7 @@ function mudarQtd(id, tamanho, delta) {
         if (item.qtd <= 0) {
             cart = cart.filter(i => !(i.id === id && i.tamanho === tamanho));
         }
-        localStorage.setItem("imperio_cart", JSON.stringify(cart));
+        localStorage.setItem("equilibrio_cart", JSON.stringify(cart));
         atualizarContadores();
         renderizarCarrinhoPagina();
     }
@@ -42,7 +42,7 @@ function renderizarCarrinhoPagina() {
     const itemsContainer = document.getElementById("cart-items-container");
     if (!itemsContainer) return;
     
-    const cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
+    const cart = JSON.parse(localStorage.getItem("equilibrio_cart") || "[]");
     
     if (cart.length === 0) {
         itemsContainer.innerHTML = `
@@ -95,10 +95,10 @@ function renderizarCarrinhoPagina() {
     }).join('');
     
     let desconto = 0;
-    const cupomAplicado = sessionStorage.getItem("imperio_coupon");
-    if (cupomAplicado === "IMPERIO10") {
+    const cupomAplicado = sessionStorage.getItem("equilibrio_coupon");
+    if (cupomAplicado === "equilibrio10") {
         desconto = subtotal * 0.10;
-        document.getElementById("coupon-msg").innerText = "Cupom IMPERIO10 (10%) Ativo!";
+        document.getElementById("coupon-msg").innerText = "Cupom equilibrio10 (10%) Ativo!";
     } else {
         document.getElementById("coupon-msg").innerText = "";
     }
@@ -111,8 +111,8 @@ function renderizarCarrinhoPagina() {
 // Aplicação de Cupom
 function aplicarCupom() {
     const code = document.getElementById("coupon-input").value.trim().toUpperCase();
-    if (code === "IMPERIO10") {
-        sessionStorage.setItem("imperio_coupon", "IMPERIO10");
+    if (code === "equilibrio10") {
+        sessionStorage.setItem("equilibrio_coupon", "equilibrio10");
         renderizarCarrinhoPagina();
         alert("Cupom de 10% aplicado com sucesso!");
     } else {

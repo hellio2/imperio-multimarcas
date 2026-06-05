@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Império Multimarcas | Compra Aprovada</title>
+    <title>Equilíbrio Multimarcas | Compra Aprovada</title>
     <link rel="stylesheet" href="css/variaveis.css">
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -21,12 +21,12 @@
     <div class="success-layout" id="success-box">
         <i class="fas fa-spinner fa-spin success-icon" style="color: #111;"></i>
         <h1>Processando seu Pedido...</h1>
-        <p>Aguarde enquanto registramos sua compra no Império.</p>
+        <p>Aguarde enquanto registramos sua compra no Equilíbrio.</p>
     </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", async () => {
-            const token = localStorage.getItem('imperio_token');
+            const token = localStorage.getItem('equilibrio_token');
             const box = document.getElementById('success-box');
 
             if (!token) {
@@ -45,13 +45,13 @@
                     const dados = await resposta.json();
                     
                     // Limpa o carrinho
-                    localStorage.removeItem('imperio_cart');
-                    localStorage.removeItem('imperio_coupon');
+                    localStorage.removeItem('equilibrio_cart');
+                    localStorage.removeItem('equilibrio_coupon');
 
                     // ==========================================
                     // LÓGICA VISUAL DO PIX
                     // ==========================================
-                    const mpResultStr = sessionStorage.getItem('imperio_mp_result');
+                    const mpResultStr = sessionStorage.getItem('equilibrio_mp_result');
                     let pixHTML = "";
 
                     if (mpResultStr) {

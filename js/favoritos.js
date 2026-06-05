@@ -1,7 +1,7 @@
 async function alternarFavorito(id) {
-    let favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
+    let favs = JSON.parse(localStorage.getItem("equilibrio_favorites") || "[]");
     const index = favs.indexOf(id);
-    const token = localStorage.getItem('imperio_token'); 
+    const token = localStorage.getItem('equilibrio_token'); 
     
     if (index > -1) {
         favs.splice(index, 1);
@@ -27,7 +27,7 @@ async function alternarFavorito(id) {
         }
     }
     
-    localStorage.setItem("imperio_favorites", JSON.stringify(favs));
+    localStorage.setItem("equilibrio_favorites", JSON.stringify(favs));
     if (typeof atualizarContadores === 'function') atualizarContadores();
     renderizarFavoritosPagina();
 }
@@ -36,7 +36,7 @@ function renderizarFavoritosPagina() {
     const container = document.getElementById("favorites-page-grid");
     if (!container) return; 
     
-    const favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
+    const favs = JSON.parse(localStorage.getItem("equilibrio_favorites") || "[]");
     const produtosFavoritos = PRODUTOS_DB.filter(p => favs.includes(p.id));
     
     if (produtosFavoritos.length === 0) {

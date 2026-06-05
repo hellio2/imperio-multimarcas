@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Império Multimarcas | Catálogo</title>
+    <title>Equilíbrio Multimarcas | Catálogo</title>
     <link rel="stylesheet" href="css/variaveis.css">
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="stylesheet" href="css/componentes/produto.css">
@@ -15,7 +15,7 @@
     <header>
         <div class="header-container">
             <div class="logo">
-                <a href="index.html">Império<span>.</span></a>
+                <a href="index.html">Equilíbrio<span>.</span></a>
             </div>
             <nav class="nav-menu">
                 <a href="index.html">Home</a>
@@ -67,7 +67,7 @@
 
     <footer>
         <div class="footer-bottom">
-            &copy; 2026 Império Multimarcas. Todos os direitos reservados.
+            &copy; 2026 Equilíbrio Multimarcas. Todos os direitos reservados.
         </div>
     </footer>
 
@@ -80,7 +80,7 @@
             const grid = document.getElementById("catalog-grid");
             if (!grid) return;
             
-            const favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
+            const favs = JSON.parse(localStorage.getItem("equilibrio_favorites") || "[]");
             
             grid.innerHTML = PRODUTOS_DB.map(prod => `
                 <div class="product-card">

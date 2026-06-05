@@ -14,7 +14,7 @@ async function carregarProdutosDoBanco() {
 }
 
 async function sincronizarCarrinhoDoBanco() {
-    const token = localStorage.getItem('imperio_token');
+    const token = localStorage.getItem('equilibrio_token');
     if (!token) return;
 
     try {
@@ -23,7 +23,7 @@ async function sincronizarCarrinhoDoBanco() {
         });
         if (resposta.ok) {
             const itensBanco = await resposta.json();
-            localStorage.setItem("imperio_cart", JSON.stringify(itensBanco));
+            localStorage.setItem("equilibrio_cart", JSON.stringify(itensBanco));
             atualizarContadores();
         }
     } catch (err) {
@@ -32,7 +32,7 @@ async function sincronizarCarrinhoDoBanco() {
 }
 
 async function sincronizarFavoritosDoBanco() {
-    const token = localStorage.getItem('imperio_token');
+    const token = localStorage.getItem('equilibrio_token');
     if (!token) return;
 
     try {
@@ -41,7 +41,7 @@ async function sincronizarFavoritosDoBanco() {
         });
         if (resposta.ok) {
             const favsBanco = await resposta.json();
-            localStorage.setItem("imperio_favorites", JSON.stringify(favsBanco));
+            localStorage.setItem("equilibrio_favorites", JSON.stringify(favsBanco));
             atualizarContadores();
         }
     } catch (err) {
@@ -49,8 +49,8 @@ async function sincronizarFavoritosDoBanco() {
     }
 }
 
-if (!localStorage.getItem("imperio_cart")) localStorage.setItem("imperio_cart", JSON.stringify([]));
-if (!localStorage.getItem("imperio_favorites")) localStorage.setItem("imperio_favorites", JSON.stringify([]));
+if (!localStorage.getItem("equilibrio_cart")) localStorage.setItem("equilibrio_cart", JSON.stringify([]));
+if (!localStorage.getItem("equilibrio_favorites")) localStorage.setItem("equilibrio_favorites", JSON.stringify([]));
 
 function mostrarNotificacao(mensagem) {
     const container = document.getElementById("toast-container");
@@ -67,14 +67,14 @@ function mostrarNotificacao(mensagem) {
 }
 
 function atualizarContadores() {
-    const cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
-    let favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
+    const cart = JSON.parse(localStorage.getItem("equilibrio_cart") || "[]");
+    let favs = JSON.parse(localStorage.getItem("equilibrio_favorites") || "[]");
     
     if (PRODUTOS_DB.length > 0) {
         const favsValidos = favs.filter(id => PRODUTOS_DB.some(p => p.id === id));
         if (favsValidos.length !== favs.length) {
             favs = favsValidos;
-            localStorage.setItem("imperio_favorites", JSON.stringify(favs));
+            localStorage.setItem("equilibrio_favorites", JSON.stringify(favs));
         }
     }
     
@@ -123,7 +123,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function adicionarAoCarrinhoGlobal(id, qtd = 1, tamanho = "M") {
-    const token = localStorage.getItem('imperio_token');
+    const token = localStorage.getItem('equilibrio_token');
     
     if (token) {
         try {
@@ -140,19 +140,19 @@ async function adicionarAoCarrinhoGlobal(id, qtd = 1, tamanho = "M") {
         }
     }
 
-    let cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
+    let cart = JSON.parse(localStorage.getItem("equilibrio_cart") || "[]");
     const itemExistente = cart.find(item => item.id === id && item.tamanho === tamanho);
     if (itemExistente) {
         itemExistente.qtd += qtd;
     } else {
         cart.push({ id, qtd, tamanho });
     }
-    localStorage.setItem("imperio_cart", JSON.stringify(cart));
+    localStorage.setItem("equilibrio_cart", JSON.stringify(cart));
     
     if (token) await sincronizarCarrinhoDoBanco();
     
     atualizarContadores();
-    mostrarNotificacao("Adicionado ao seu Império de compras!");
+    mostrarNotificacao("Adicionado ao seu Equilíbrio de compras!");
     
     document.getElementById("cart-overlay").classList.add("active");
     document.getElementById("cart-drawer").classList.add("active");
@@ -164,7 +164,7 @@ function renderizarMinicart() {
     const minicartTotal = document.getElementById("minicart-total");
     if (!minicartBody) return;
 
-    const cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
+    const cart = JSON.parse(localStorage.getItem("equilibrio_cart") || "[]");
     let subtotal = 0;
 
     if (cart.length === 0) {
@@ -202,7 +202,7 @@ function renderizarMinicart() {
 
 // Remove o item do banco de dados e do navegador
 async function removerDoCarrinhoGlobal(id, tamanho) {
-    const token = localStorage.getItem('imperio_token');
+    const token = localStorage.getItem('equilibrio_token');
     
     if (token) {
         try {
@@ -213,9 +213,9 @@ async function removerDoCarrinhoGlobal(id, tamanho) {
         } catch (err) { console.error("Erro ao deletar do banco:", err); }
     }
 
-    let cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
+    let cart = JSON.parse(localStorage.getItem("equilibrio_cart") || "[]");
     cart = cart.filter(i => !(i.id === id && i.tamanho === tamanho));
-    localStorage.setItem("imperio_cart", JSON.stringify(cart));
+    localStorage.setItem("equilibrio_cart", JSON.stringify(cart));
     
     atualizarContadores();
     renderizarMinicart();

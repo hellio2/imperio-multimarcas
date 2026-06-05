@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const checkoutGrid = document.querySelector(".checkout-grid");
     if (!checkoutGrid) return;
     
-    const cart = JSON.parse(localStorage.getItem("imperio_cart") || "[]");
+    const cart = JSON.parse(localStorage.getItem("equilibrio_cart") || "[]");
     if (cart.length === 0) {
         window.location.href = "carrinho.html";
         return;
@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     let desconto = 0;
-    if (sessionStorage.getItem("imperio_coupon") === "IMPERIO10") {
+    if (sessionStorage.getItem("equilibrio_coupon") === "equilibrio10") {
         desconto = subtotal * 0.10;
     }
     
@@ -61,8 +61,8 @@ document.addEventListener("DOMContentLoaded", () => {
 function finalizarPedido(event) {
     event.preventDefault();
     
-    alert("Pedido Concluído! Seu pagamento foi processado com sucesso pelo ecossistema Império Multimarcas.");
-    localStorage.setItem("imperio_cart", JSON.stringify([])); // Limpa o carrinho
-    sessionStorage.removeItem("imperio_coupon");
+    alert("Pedido Concluído! Seu pagamento foi processado com sucesso pelo ecossistema Equilíbrio Multimarcas.");
+    localStorage.setItem("equilibrio_cart", JSON.stringify([])); // Limpa o carrinho
+    sessionStorage.removeItem("equilibrio_coupon");
     window.location.href = "index.html";
 }

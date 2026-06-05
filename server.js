@@ -38,7 +38,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'imperio_produtos', // Pasta que será criada automaticamente no seu Cloudinary
+        folder: 'equilibrio_produtos', // Pasta que será criada automaticamente no seu Cloudinary
         allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
     }
 });
@@ -318,7 +318,7 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
         // INJEÇÃO FORÇADA: Cria um comprador 100% validado para evitar qualquer erro de API
         const paymentBody = {
             transaction_amount: Number(transaction_amount),
-            description: 'Pedido - Império Multimarcas',
+            description: 'Pedido - Equilíbrio Multimarcas',
             payment_method_id: payment_method_id,
             payer: {
                 email: `comprador_${Date.now()}@teste.com`, // E-mail aleatório para fugir da trava de vendedor
@@ -446,10 +446,10 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
         // 3. Payload Blindado
         const paymentBody = {
             transaction_amount: Number(transaction_amount),
-            description: 'Pedido - Império Multimarcas',
-            statement_descriptor: 'IMPERIOMULTI',
+            description: 'Pedido - Equilíbrio Multimarcas',
+            statement_descriptor: 'equilibrioMULTI',
             external_reference: referenciaExterna, 
-            notification_url: 'https://imperio-multimarcas.onrender.com/api/webhook',
+            notification_url: 'https://equilibrio-multimarcas.onrender.com/api/webhook',
             payment_method_id: payment_method_id,
             additional_info: { 
                 items: itensDoCarrinho,
@@ -608,5 +608,5 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`👑 Império Multimarcas (Admin Mode) rodando na porta ${PORT}!`);
+    console.log(`👑 Equilíbrio Multimarcas (Admin Mode) rodando na porta ${PORT}!`);
 });

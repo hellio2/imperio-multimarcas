@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Império Multimarcas | Checkout Transparente</title>
+    <title>Equilíbrio Multimarcas | Checkout Transparente</title>
     <link rel="stylesheet" href="css/variaveis.css">
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -88,7 +88,7 @@
         // INICIALIZAÇÃO DO MERCADO PAGO BRICKS (COM DIAGNÓSTICO)
         // =========================================================
         document.addEventListener("DOMContentLoaded", async () => {
-            const tokenAuth = localStorage.getItem('imperio_token');
+            const tokenAuth = localStorage.getItem('equilibrio_token');
             const containerBrick = document.getElementById('paymentBrick_container');
 
             if (!tokenAuth) {
@@ -163,7 +163,7 @@
                                 .then((data) => {
                                     if (data.sucesso) {
                                         // GUARDA OS DADOS DO PIX NA MEMÓRIA ANTES DE MUDAR DE PÁGINA
-                                        sessionStorage.setItem('imperio_mp_result', JSON.stringify(data));
+                                        sessionStorage.setItem('equilibrio_mp_result', JSON.stringify(data));
                                         
                                         window.location.href = 'sucesso.html';
                                         resolve();

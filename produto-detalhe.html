@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Império Multimarcas | Detalhes do Produto</title>
+    <title>Equilíbrio Multimarcas | Detalhes do Produto</title>
     <link rel="stylesheet" href="css/variaveis.css">
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="stylesheet" href="css/componentes/home.css"> <link rel="stylesheet" href="css/componentes/produto-detalhe.css">
@@ -14,7 +14,7 @@
     <header>
         <div class="header-container">
             <div class="logo">
-                <a href="index.html">Império<span>.</span></a>
+                <a href="index.html">Equilíbrio<span>.</span></a>
             </div>
             <nav class="nav-menu">
                 <a href="index.html">Home</a>
@@ -53,7 +53,7 @@
     </section>
 
     <section class="newsletter-section">
-        <h2>Faça Parte Do <span>Império</span></h2>
+        <h2>Faça Parte Do <span>Equilíbrio</span></h2>
         <p>Inscreva-se na nossa newsletter e receba 10% de desconto na sua primeira compra, além de acesso antecipado a drops exclusivos.</p>
         <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Inscrição realizada com sucesso!');">
             <input type="email" placeholder="Seu melhor e-mail" required>
@@ -64,7 +64,7 @@
     <footer>
         <div class="footer-container">
             <div class="footer-brand">
-                <div class="logo"><a href="index.html">Império<span>.</span></a></div>
+                <div class="logo"><a href="index.html">Equilíbrio<span>.</span></a></div>
                 <p>A marca definitiva de Streetwear Premium. Elevando o seu estilo diário ao nível máximo de exclusividade.</p>
                 <div class="social-icons">
                     <a href="#"><i class="fab fa-instagram"></i></a>
@@ -90,7 +90,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 Império Multimarcas. Todos os direitos reservados. Desenvolvido com foco em exclusividade.</p>
+            <p>&copy; 2026 Equilíbrio Multimarcas. Todos os direitos reservados. Desenvolvido com foco em exclusividade.</p>
         </div>
     </footer>
 
@@ -116,7 +116,7 @@
             const produtoId = parseInt(urlParams.get('id'));
 
             const prod = PRODUTOS_DB.find(p => p.id === produtoId);
-            const favs = JSON.parse(localStorage.getItem("imperio_favorites") || "[]");
+            const favs = JSON.parse(localStorage.getItem("equilibrio_favorites") || "[]");
 
             if (!prod) {
                 container.innerHTML = `

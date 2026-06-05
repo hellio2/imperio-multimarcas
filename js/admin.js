@@ -3,8 +3,8 @@ let PRODUTOS_LOCAL_LIST = [];
 
 // VERIFICAÇÃO CRÍTICA DE PERMISSÃO AO CARREGAR A TELA
 document.addEventListener("DOMContentLoaded", () => {
-    const token = localStorage.getItem('imperio_token');
-    const userJson = localStorage.getItem('imperio_user');
+    const token = localStorage.getItem('equilibrio_token');
+    const userJson = localStorage.getItem('equilibrio_user');
 
     if (!token || !userJson) {
         alert("Acesso restrito. Faça login para continuar.");
@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const usuario = JSON.parse(userJson);
     if (usuario.role !== 'admin') {
-        alert("Acesso negado. Esta área é restrita aos administradores do Império.");
+        alert("Acesso negado. Esta área é restrita aos administradores do Equilíbrio.");
         window.location.href = 'index.html';
         return;
     }
@@ -53,7 +53,7 @@ function mostrarNotificacaoAdmin(mensagem, tipo = 'success') {
 // =========================================================
 document.getElementById('form-novo-produto').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('imperio_token');
+    const token = localStorage.getItem('equilibrio_token');
     const form = document.getElementById('form-novo-produto');
     
     const formData = new FormData();
@@ -159,7 +159,7 @@ function fecharModalEditar() {
 // INTERCEPTA O ENVIO DE SALVAR DA JANELA DE EDIÇÃO (PUT)
 document.getElementById('form-editar-produto').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('imperio_token');
+    const token = localStorage.getItem('equilibrio_token');
     const id = document.getElementById('edit-prod-id').value;
 
     const formData = new FormData();
@@ -200,9 +200,9 @@ document.getElementById('form-editar-produto').addEventListener('submit', async 
 // AÇÃO 3: REMOVER ITEM DO BANCO (DELETE)
 // =========================================================
 async function deletarProduto(id) {
-    if (!confirm("Tem certeza absoluta de que deseja remover esta peça do catálogo do Império definitivamente?")) return;
+    if (!confirm("Tem certeza absoluta de que deseja remover esta peça do catálogo do Equilíbrio definitivamente?")) return;
 
-    const token = localStorage.getItem('imperio_token');
+    const token = localStorage.getItem('equilibrio_token');
 
     try {
         const resposta = await fetch(`/api/admin/produtos/${id}`, {
@@ -228,7 +228,7 @@ async function carregarPedidosAdmin() {
     const tbody = document.querySelector('#panel-pedidos tbody');
     if (!tbody) return;
 
-    const token = localStorage.getItem('imperio_token');
+    const token = localStorage.getItem('equilibrio_token');
     
     try {
         const resposta = await fetch('/api/admin/pedidos', {
