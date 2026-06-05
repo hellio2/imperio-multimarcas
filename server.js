@@ -380,19 +380,62 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
     try {
         const client = new Payment(clienteMercadoPago);
-        
-        // Pega todos os dados do corpo da requisição (do Brick e dos inputs manuais)
         const { transaction_amount, token, installments, payment_method_id, issuer_id, payer } = req.body;
 
+        // =======================================================
+        // 1. SANITIZAÇÃO EXTREMA DE DADOS (Prevenção de Erro 400/500)
+        // =======================================================
+        const rawAddress = payer?.address || req.body || {};
+        
+        // A) Tratamento de UF (Garante que sempre serão 2 letras maiúsculas)
+        let uf = String(rawAddress.federal_unit || rawAddress.estado || "SP").trim();
+        const estadosBR = {
+            "acre": "AC", "alagoas": "AL", "amapá": "AP", "amazonas": "AM", "bahia": "BA",
+            "ceará": "CE", "distrito federal": "DF", "espírito santo": "ES", "goiás": "GO",
+            "maranhão": "MA", "mato grosso": "MT", "mato grosso do sul": "MS", "minas gerais": "MG",
+            "pará": "PA", "paraíba": "PB", "paraná": "PR", "pernambuco": "PE", "piauí": "PI",
+            "rio de janeiro": "RJ", "rio grande do norte": "RN", "rio grande do sul": "RS",
+            "rondônia": "RO", "roraima": "RR", "santa catarina": "SC", "são paulo": "SP",
+            "sergipe": "SE", "tocantins": "TO"
+        };
+        if (uf.length > 2) {
+            uf = estadosBR[uf.toLowerCase()] || uf.substring(0, 2).toUpperCase();
+        }
+
+        // B) Tratamento de Número (Remove letras ou vírgulas como "108, Casa")
+        let numeroBruto = String(rawAddress.street_number || rawAddress.numero || "1");
+        const numerosExtraidos = numeroBruto.match(/\d+/);
+        const numeroLimpo = numerosExtraidos ? numerosExtraidos[0] : "1";
+
+        const enderecoFormatado = {
+            zip_code: String(rawAddress.zip_code || rawAddress.cep || "01001000").replace(/\D/g, ''),
+            street_name: String(rawAddress.street_name || rawAddress.rua || "Não informado").trim(),
+            street_number: numeroLimpo, // MP exige apenas números aqui
+            neighborhood: String(rawAddress.neighborhood || rawAddress.bairro || "Não informado").trim(),
+            city: String(rawAddress.city || rawAddress.cidade || "Não informado").trim(),
+            federal_unit: uf.toUpperCase()
+        };
+
+        const firstName = String(payer?.first_name || req.body.nome || req.usuario.nome || "Cliente").trim();
+        const lastName = String(payer?.last_name || req.body.sobrenome || "Teste").trim();
+        const emailFinal = String(payer?.email || req.usuario.email).trim();
+        const docType = String(payer?.identification?.type || "CPF").trim();
+        const docNumber = String(payer?.identification?.number || "").replace(/\D/g, ''); // Limpa pontuação do CPF
+
+        // 2. Busca o Carrinho
         const cartRes = await pool.query(
             `SELECT c.quantidade, p.nome, p.preco, p.categoria 
              FROM carrinho c JOIN produtos p ON c.produto_id = p.id 
              WHERE c.usuario_id = $1`, [req.usuario.id]
         );
 
+        if (cartRes.rows.length === 0) {
+             return res.status(400).json({ erro: 'Carrinho vazio.' });
+        }
+
         const itensDoCarrinho = cartRes.rows.map(item => ({
-            title: item.nome,
-            description: `Compra de ${item.nome} no Império Multimarcas`,
+            title: String(item.nome).substring(0, 250), // MP aceita no máximo 250 caracteres
+            description: `Produto: ${item.nome}`.substring(0, 250),
             category_id: item.categoria || "fashion",
             quantity: Number(item.quantidade),
             unit_price: Number(item.preco)
@@ -400,7 +443,7 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 
         const referenciaExterna = `PEDIDO_USER${req.usuario.id}_${Date.now()}`;
 
-        // Construção Dinâmica e Flexível do Payer
+        // 3. Payload Blindado
         const paymentBody = {
             transaction_amount: Number(transaction_amount),
             description: 'Pedido - Império Multimarcas',
@@ -408,21 +451,27 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
             external_reference: referenciaExterna, 
             notification_url: 'https://imperio-multimarcas.onrender.com/api/webhook',
             payment_method_id: payment_method_id,
-            additional_info: { items: itensDoCarrinho },
-            payer: {
-                email: req.usuario.email || payer?.email,
-                first_name: payer?.first_name || req.body.nome || "Cliente",
-                last_name: payer?.last_name || req.body.sobrenome || "",
-                identification: payer?.identification,
-                // Tenta pegar o endereço do Brick ou dos campos customizados soltos no req.body
-                address: payer?.address || {
-                    zip_code: req.body.cep || "29730000",
-                    street_name: req.body.rua || "Endereço Principal",
-                    street_number: req.body.numero || "S/N",
-                    neighborhood: req.body.bairro || "Centro",
-                    city: req.body.cidade || "Cidade",
-                    federal_unit: req.body.estado || "ES"
+            additional_info: { 
+                items: itensDoCarrinho,
+                payer: {
+                    first_name: firstName,
+                    last_name: lastName,
+                    address: {
+                        zip_code: enderecoFormatado.zip_code,
+                        street_name: enderecoFormatado.street_name,
+                        street_number: Number(enderecoFormatado.street_number) // Força Number para a subcamada de Antifraude
+                    }
                 }
+            },
+            payer: {
+                email: emailFinal,
+                first_name: firstName,
+                last_name: lastName,
+                identification: {
+                    type: docType,
+                    number: docNumber
+                },
+                address: enderecoFormatado
             }
         };
 
@@ -438,40 +487,48 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
         });
 
         if (payment.status === 'approved' || payment.status === 'in_process' || payment.status === 'pending') {
-            
             let pixResponse = null;
             let boletoResponse = null;
 
-            // Tratamento Específico para Pix
             if (payment.payment_method_id === 'pix' && payment.point_of_interaction) {
                 pixResponse = {
                     qr_code: payment.point_of_interaction.transaction_data.qr_code,
                     qr_code_base64: payment.point_of_interaction.transaction_data.qr_code_base64
                 };
             } 
-            // Tratamento Específico para Boleto (Ticket)
-            else if (payment.payment_type_id === 'ticket') {
+            else if (payment.payment_type_id === 'ticket' || String(payment.payment_method_id).includes('boleto') || payment.payment_method_id === 'bolbradesco') {
                 boletoResponse = {
-                    url: payment.transaction_details?.external_resource_url, // Link do PDF do Boleto Real
-                    linha_digitavel: payment.barcode?.content // Código de barras
+                    url: payment.transaction_details?.external_resource_url || payment.point_of_interaction?.transaction_data?.ticket_url,
+                    linha_digitavel: payment.barcode?.content || payment.barcode?.content_text
                 };
             }
 
-            res.status(200).json({ 
+            return res.status(200).json({ 
                 sucesso: true, 
                 id: payment.id, 
                 status: payment.status, 
                 metodo: payment.payment_method_id,
                 pix: pixResponse,
-                boleto: boletoResponse // Envia o boleto para o Frontend montar o botão de Download
+                boleto: boletoResponse
             });
         } else {
-            res.status(400).json({ erro: `Recusado: ${payment.status_detail}` });
+            return res.status(400).json({ erro: `Recusado: ${payment.status_detail}` });
         }
 
     } catch (err) {
-        console.error("Erro no Processamento do Brick:", err.message || err);
-        res.status(500).json({ erro: 'Erro interno ao processar o pagamento.' });
+        console.error("\n❌ FALHA AO PROCESSAR PAGAMENTO:");
+        
+        // 🚨 SEGREDO DO SDK V2: Interceptando o erro raiz da API do MP
+        let errorMessage = 'Erro interno ao processar o pagamento.';
+        
+        if (err.api_response) {
+             console.error("Motivo detalhado (API):", JSON.stringify(err.api_response, null, 2));
+             errorMessage = "Falha na formatação: " + (err.api_response.message || 'Verifique os dados digitados.');
+        } else {
+             console.error(err.message || err);
+        }
+        
+        return res.status(500).json({ erro: errorMessage });
     }
 });
 
