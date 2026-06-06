@@ -13,11 +13,14 @@ const multer = require('multer');
 
 // NOVAS IMPORTAÇÕES (PAGAMENTO E FRETE)
 // Substitua a linha antiga de importação do MP por esta:
-const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+//const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const { calcularPrecoPrazo } = require('correios-brasil');
 
 // Inicializa o Mercado Pago com a sua chave
-const clienteMercadoPago = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
+//const clienteMercadoPago = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
+
+// ADICIONE ESTA LINHA:
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -287,10 +290,10 @@ app.post('/api/frete', async (req, res) => {
 
 
 // =========================================================
-// ROTA DE CONFIGURAÇÃO (Envia a chave pública pro Frontend)
+// ROTA DE CONFIGURAÇÃO STRIPE (Envia a chave pública pro Frontend)
 // =========================================================
-app.get('/api/config/mp', (req, res) => {
-    res.json({ publicKey: process.env.MP_PUBLIC_KEY });
+app.get('/api/config/stripe', (req, res) => {
+    res.json({ publicKey: process.env.STRIPE_PUBLIC_KEY });
 });
 
 // =========================================================
@@ -306,229 +309,52 @@ app.post('/api/webhook', (req, res) => {
     console.log("🔔 Webhook Recebido do MP:", req.query);
 });
 
-/*
 // =========================================================
-// ROTA DE PAGAMENTO (CHECKOUT BRICKS TRANPARENTE) -- TESTE
-// =========================================================
-app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
-    try {
-        const client = new Payment(clienteMercadoPago);
-        const { transaction_amount, token, installments, payment_method_id, issuer_id, payer } = req.body;
-
-        // INJEÇÃO FORÇADA: Cria um comprador 100% validado para evitar qualquer erro de API
-        const paymentBody = {
-            transaction_amount: Number(transaction_amount),
-            description: 'Pedido - Equilíbrio Multimarcas',
-            payment_method_id: payment_method_id,
-            payer: {
-                email: `comprador_${Date.now()}@teste.com`, // E-mail aleatório para fugir da trava de vendedor
-                first_name: payer?.first_name || "Cliente",
-                last_name: payer?.last_name || "Teste",
-                identification: payer?.identification || { type: "CPF", number: "19119119100" },
-                address: {
-                    zip_code: "01001000",
-                    street_name: "Rua Fictícia",
-                    street_number: "123",
-                    neighborhood: "Centro",
-                    city: "São Paulo",
-                    federal_unit: "SP"
-                }
-            }
-        };
-
-        // Adiciona dados de cartão somente se for cartão
-        if (token) paymentBody.token = token;
-        if (installments) paymentBody.installments = Number(installments);
-        if (issuer_id) paymentBody.issuer_id = issuer_id;
-
-        const payment = await client.create({ body: paymentBody });
-
-        // 6. Verifica o status real
-        if (payment.status === 'approved' || payment.status === 'in_process' || payment.status === 'pending') {
-            
-            // CAPTURA DE DADOS DO PIX
-            let pixResponse = null;
-            if (payment.payment_method_id === 'pix' && payment.point_of_interaction) {
-                pixResponse = {
-                    qr_code: payment.point_of_interaction.transaction_data.qr_code,
-                    qr_code_base64: payment.point_of_interaction.transaction_data.qr_code_base64
-                };
-            }
-
-            res.status(200).json({ 
-                sucesso: true, 
-                id: payment.id, 
-                status: payment.status, 
-                metodo: payment.payment_method_id,
-                pix: pixResponse // Manda o QR Code para o Frontend
-            });
-
-        } else {
-            res.status(400).json({ erro: `Recusado: ${payment.status_detail}` });
-        }
-
-    } catch (err) {
-        console.error("Erro no Processamento do Brick:", err.message || err);
-        res.status(500).json({ erro: 'Erro interno ao processar o pagamento. Verifique o terminal.' });
-    }
-});
-*/
-
-// =========================================================
-// ROTA DE PAGAMENTO (CHECKOUT BRICKS TRANPARENTE - PRODUÇÃO)
+// ROTA DE PAGAMENTO (STRIPE INTENTS - EQUILÍBRIO MULTIMARCAS)
 // =========================================================
 app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
     try {
-        const client = new Payment(clienteMercadoPago);
-        const { transaction_amount, token, installments, payment_method_id, issuer_id, payer } = req.body;
-
-        // =======================================================
-        // 1. SANITIZAÇÃO EXTREMA DE DADOS (Prevenção de Erro 400/500)
-        // =======================================================
-        const rawAddress = payer?.address || req.body || {};
-        
-        // A) Tratamento de UF (Garante que sempre serão 2 letras maiúsculas)
-        let uf = String(rawAddress.federal_unit || rawAddress.estado || "SP").trim();
-        const estadosBR = {
-            "acre": "AC", "alagoas": "AL", "amapá": "AP", "amazonas": "AM", "bahia": "BA",
-            "ceará": "CE", "distrito federal": "DF", "espírito santo": "ES", "goiás": "GO",
-            "maranhão": "MA", "mato grosso": "MT", "mato grosso do sul": "MS", "minas gerais": "MG",
-            "pará": "PA", "paraíba": "PB", "paraná": "PR", "pernambuco": "PE", "piauí": "PI",
-            "rio de janeiro": "RJ", "rio grande do norte": "RN", "rio grande do sul": "RS",
-            "rondônia": "RO", "roraima": "RR", "santa catarina": "SC", "são paulo": "SP",
-            "sergipe": "SE", "tocantins": "TO"
-        };
-        if (uf.length > 2) {
-            uf = estadosBR[uf.toLowerCase()] || uf.substring(0, 2).toUpperCase();
-        }
-
-        // B) Tratamento de Número (Remove letras ou vírgulas como "108, Casa")
-        let numeroBruto = String(rawAddress.street_number || rawAddress.numero || "1");
-        const numerosExtraidos = numeroBruto.match(/\d+/);
-        const numeroLimpo = numerosExtraidos ? numerosExtraidos[0] : "1";
-
-        const enderecoFormatado = {
-            zip_code: String(rawAddress.zip_code || rawAddress.cep || "01001000").replace(/\D/g, ''),
-            street_name: String(rawAddress.street_name || rawAddress.rua || "Não informado").trim(),
-            street_number: numeroLimpo, // MP exige apenas números aqui
-            neighborhood: String(rawAddress.neighborhood || rawAddress.bairro || "Não informado").trim(),
-            city: String(rawAddress.city || rawAddress.cidade || "Não informado").trim(),
-            federal_unit: uf.toUpperCase()
-        };
-
-        const firstName = String(payer?.first_name || req.body.nome || req.usuario.nome || "Cliente").trim();
-        const lastName = String(payer?.last_name || req.body.sobrenome || "Teste").trim();
-        const emailFinal = String(payer?.email || req.usuario.email).trim();
-        const docType = String(payer?.identification?.type || "CPF").trim();
-        const docNumber = String(payer?.identification?.number || "").replace(/\D/g, ''); // Limpa pontuação do CPF
-
-        // 2. Busca o Carrinho
+        // 1. Busca os itens do carrinho para validar o valor no backend
         const cartRes = await pool.query(
-            `SELECT c.quantidade, p.nome, p.preco, p.categoria 
+            `SELECT c.quantidade, p.nome, p.preco 
              FROM carrinho c JOIN produtos p ON c.produto_id = p.id 
              WHERE c.usuario_id = $1`, [req.usuario.id]
         );
 
         if (cartRes.rows.length === 0) {
-             return res.status(400).json({ erro: 'Carrinho vazio.' });
+            return res.status(400).json({ erro: 'Seu carrinho está vazio.' });
         }
 
-        const itensDoCarrinho = cartRes.rows.map(item => ({
-            title: String(item.nome).substring(0, 250), // MP aceita no máximo 250 caracteres
-            description: `Produto: ${item.nome}`.substring(0, 250),
-            category_id: item.categoria || "fashion",
-            quantity: Number(item.quantidade),
-            unit_price: Number(item.preco)
-        }));
+        // Calcula o valor total do carrinho
+        const totalCarrinho = cartRes.rows.reduce((acc, item) => acc + (Number(item.preco) * Number(item.quantidade)), 0);
+        
+        // 🚨 REGRA DA STRIPE: Os valores devem ser enviados em CENTAVOS (Ex: R$ 5,00 vira 500)
+        const valorEmCentavos = Math.round(totalCarrinho * 100);
 
-        const referenciaExterna = `PEDIDO_USER${req.usuario.id}_${Date.now()}`;
-
-        // 3. Payload Blindado
-        const paymentBody = {
-            transaction_amount: Number(transaction_amount),
-            description: 'Pedido - Equilíbrio Multimarcas',
-            statement_descriptor: 'equilibrioMULTI',
-            external_reference: referenciaExterna, 
-            notification_url: 'https://equilibrio-multimarcas.onrender.com/api/webhook',
-            payment_method_id: payment_method_id,
-            additional_info: { 
-                items: itensDoCarrinho,
-                payer: {
-                    first_name: firstName,
-                    last_name: lastName,
-                    address: {
-                        zip_code: enderecoFormatado.zip_code,
-                        street_name: enderecoFormatado.street_name,
-                        street_number: Number(enderecoFormatado.street_number) // Força Number para a subcamada de Antifraude
-                    }
-                }
+        // 2. Cria a Intenção de Pagamento na Stripe
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: valorEmCentavos,
+            currency: 'brl', // Define a moeda como Real Brasileiro
+            metadata: {
+                usuario_id: req.usuario.id,
+                loja: 'Equilíbrio Multimarcas'
             },
-            payer: {
-                email: emailFinal,
-                first_name: firstName,
-                last_name: lastName,
-                identification: {
-                    type: docType,
-                    number: docNumber
-                },
-                address: enderecoFormatado
-            }
-        };
-
-        if (token) paymentBody.token = token;
-        if (installments) paymentBody.installments = Number(installments);
-        if (issuer_id) paymentBody.issuer_id = issuer_id;
-
-        const chaveIdempotencia = `IDEMP_${req.usuario.id}_${Date.now()}`;
-
-        const payment = await client.create({ 
-            body: paymentBody,
-            requestOptions: { idempotencyKey: chaveIdempotencia }
+            // Ativa automaticamente Pix e Cartão de Crédito configurados no seu painel Stripe
+            automatic_payment_methods: {
+                enabled: true,
+            },
         });
 
-        if (payment.status === 'approved' || payment.status === 'in_process' || payment.status === 'pending') {
-            let pixResponse = null;
-            let boletoResponse = null;
-
-            if (payment.payment_method_id === 'pix' && payment.point_of_interaction) {
-                pixResponse = {
-                    qr_code: payment.point_of_interaction.transaction_data.qr_code,
-                    qr_code_base64: payment.point_of_interaction.transaction_data.qr_code_base64
-                };
-            } 
-            else if (payment.payment_type_id === 'ticket' || String(payment.payment_method_id).includes('boleto') || payment.payment_method_id === 'bolbradesco') {
-                boletoResponse = {
-                    url: payment.transaction_details?.external_resource_url || payment.point_of_interaction?.transaction_data?.ticket_url,
-                    linha_digitavel: payment.barcode?.content || payment.barcode?.content_text
-                };
-            }
-
-            return res.status(200).json({ 
-                sucesso: true, 
-                id: payment.id, 
-                status: payment.status, 
-                metodo: payment.payment_method_id,
-                pix: pixResponse,
-                boleto: boletoResponse
-            });
-        } else {
-            return res.status(400).json({ erro: `Recusado: ${payment.status_detail}` });
-        }
+        // 3. Devolve o client_secret para o Frontend desenhar a tela de pagamento segura
+        res.status(200).json({
+            sucesso: true,
+            clientSecret: paymentIntent.client_secret, // O Frontend vai precisar disso aqui
+            id: paymentIntent.id
+        });
 
     } catch (err) {
-        console.error("\n❌ FALHA AO PROCESSAR PAGAMENTO:");
-        
-        // 🚨 SEGREDO DO SDK V2: Interceptando o erro raiz da API do MP
-        let errorMessage = 'Erro interno ao processar o pagamento.';
-        
-        if (err.api_response) {
-             console.error("Motivo detalhado (API):", JSON.stringify(err.api_response, null, 2));
-             errorMessage = "Falha na formatação: " + (err.api_response.message || 'Verifique os dados digitados.');
-        } else {
-             console.error(err.message || err);
-        }
-        
-        return res.status(500).json({ erro: errorMessage });
+        console.error("❌ Erro ao criar intenção de pagamento na Stripe:", err.message || err);
+        res.status(500).json({ erro: 'Erro interno ao inicializar o gateway de pagamento.' });
     }
 });
 

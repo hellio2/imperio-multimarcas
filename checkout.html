@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
     
-    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <script src="https://js.stripe.com/v3/"></script>
 
     <style>
         .checkout-layout { max-width: 800px; margin: 60px auto; padding: 0 20px; }
@@ -25,8 +25,7 @@
         .frete-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
         .frete-card { border: 1px solid #ddd; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; transition: 0.3s; }
         
-        /* Oculta o container do brick até ele carregar o valor */
-        #paymentBrick_container { min-height: 400px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body style="background-color: #f4f6f9;">
@@ -51,15 +50,25 @@
             <div style="border-top: 1px solid #eee; padding-top: 30px;">
                 <h4 style="margin-bottom: 15px; text-transform: uppercase; font-size: 0.9rem;">2. Pagamento Seguro</h4>
                 
-                <div id="paymentBrick_container">
-                    <p style="text-align: center; color: #666; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando ambiente seguro...</p>
-                </div>
+                <form id="payment-form">
+                    <div id="payment-element">
+                        <p style="text-align: center; color: #666; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando ambiente seguro...</p>
+                    </div>
+                    
+                    <button id="submit" style="margin-top:20px; width:100%; padding: 15px; background: #111; color: #fff; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: background 0.3s;">
+                        <span id="button-text">Pagar Agora</span>
+                    </button>
+                    
+                    <div id="payment-message" style="color: #dc3545; margin-top: 15px; text-align: center; font-weight: bold;" class="hidden"></div>
+                </form>
             </div>
         </div>
     </div>
 
     <script>
-        // Lógica de Frete (Mantida intacta)
+        // =========================================================
+        // LÓGICA DE FRETE CORREIOS (MANTIDA INTACTA)
+        // =========================================================
         async function calcularFrete() {
             const cep = document.getElementById('cep-input').value;
             const container = document.getElementById('frete-resultados');
@@ -85,11 +94,10 @@
         }
 
         // =========================================================
-        // INICIALIZAÇÃO DO MERCADO PAGO BRICKS (COM DIAGNÓSTICO)
+        // INICIALIZAÇÃO DO STRIPE ELEMENTS
         // =========================================================
         document.addEventListener("DOMContentLoaded", async () => {
             const tokenAuth = localStorage.getItem('equilibrio_token');
-            const containerBrick = document.getElementById('paymentBrick_container');
 
             if (!tokenAuth) {
                 alert("Sessão expirada. Faça login para continuar.");
@@ -98,99 +106,78 @@
             }
 
             try {
-                // 1. Pega a Chave Pública do Backend
-                const configRes = await fetch('/api/config/mp');
+                // 1. Pega a Chave Pública da Stripe no Backend
+                const configRes = await fetch('/api/config/stripe');
                 const configData = await configRes.json();
                 
-                // Validação de segurança: Verifica se a chave realmente chegou
                 if (!configData.publicKey) {
-                    throw new Error("Chave Pública não encontrada. Você reiniciou o servidor após alterar o .env?");
+                    throw new Error("Chave Pública não encontrada. Verifique as variáveis de ambiente.");
                 }
                 
-                const mp = new MercadoPago(configData.publicKey, { locale: 'pt-BR' });
+                const stripe = Stripe(configData.publicKey);
 
-                // 2. Consulta o carrinho
-                const cartRes = await fetch('/api/carrinho', { headers: { 'Authorization': `Bearer ${tokenAuth}` }});
-                const cartData = await cartRes.json();
+                // 2. Chama a rota para criar a Intenção de Pagamento (Payment Intent)
+                const processRes = await fetch('/api/pagamento/processar', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${tokenAuth}` }
+                });
+                const data = await processRes.json();
+
+                if (data.erro) {
+                    throw new Error(data.erro);
+                }
+
+                const clientSecret = data.clientSecret;
+
+                // 3. Monta o formulário Stripe Elements na tela
+                const appearance = { theme: 'stripe' };
+                const elements = stripe.elements({ appearance, clientSecret });
                 
-                // Validação de segurança: Verifica se o token expirou ou deu erro
-                if (cartData.erro) {
-                    throw new Error("Falha ao ler carrinho: " + cartData.erro);
-                }
+                const paymentElement = elements.create('payment');
+                
+                // Limpa o container e monta o formulário real
+                document.getElementById('payment-element').innerHTML = '';
+                paymentElement.mount('#payment-element');
 
-                if(!Array.isArray(cartData) || cartData.length === 0) {
-                    containerBrick.innerHTML = "<p style='text-align:center; padding: 20px;'>Seu carrinho está vazio.</p>";
-                    return;
-                }
+                // 4. Intercepta o clique no botão "Pagar Agora"
+                const form = document.getElementById('payment-form');
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const btnText = document.getElementById('button-text');
+                    const btnSubmit = document.getElementById('submit');
+                    
+                    btnText.innerText = "Processando...";
+                    btnSubmit.disabled = true;
+                    btnSubmit.style.background = "#555";
 
-                // Soma o total validando se é um número (evita erro NaN)
-                const totalAmount = cartData.reduce((acc, item) => {
-                    const preco = parseFloat(item.preco);
-                    const qtd = parseInt(item.qtd);
-                    return acc + (isNaN(preco) ? 0 : preco * qtd);
-                }, 0);
-
-                if (totalAmount <= 0) {
-                    throw new Error("O valor total do carrinho é inválido ou zero.");
-                }
-
-                // 3. Constrói o formulário
-                const bricksBuilder = mp.bricks();
-                containerBrick.innerHTML = ""; // Limpa a tela de loading
-
-                await bricksBuilder.create('payment', 'paymentBrick_container', {
-                    initialization: { amount: totalAmount },
-                    customization: {
-                        paymentMethods: {
-                            ticket: "all",
-                            creditCard: "all",
-                            bankTransfer: "all"
+                    // A Stripe processa tudo com segurança e redireciona automaticamente em caso de sucesso
+                    const { error } = await stripe.confirmPayment({
+                        elements,
+                        confirmParams: {
+                            // Manda o usuário para a tela de sucesso assim que o pagamento for aprovado
+                            return_url: window.location.origin + '/sucesso.html',
                         }
-                    },
-                    callbacks: {
-                        onReady: () => { console.log('Brick carregado com sucesso!'); },
-                        onSubmit: (paymentData) => {
-                            return new Promise((resolve, reject) => {
-                                fetch('/api/pagamento/processar', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${tokenAuth}`
-                                    },
-                                    body: JSON.stringify(paymentData.formData)
-                                })
-                                .then((res) => res.json())
-                                .then((data) => {
-                                    if (data.sucesso) {
-                                        // GUARDA OS DADOS DO PIX NA MEMÓRIA ANTES DE MUDAR DE PÁGINA
-                                        sessionStorage.setItem('equilibrio_mp_result', JSON.stringify(data));
-                                        
-                                        window.location.href = 'sucesso.html';
-                                        resolve();
-                                    } else {
-                                        alert("Aviso: " + (data.erro || "Falha no pagamento"));
-                                        reject();
-                                    }
-                                })
-                                .catch((error) => {
-                                    alert("Falha de conexão com o banco.");
-                                    reject();
-                                });
-                            });
-                        },
-                        onError: (error) => {
-                            console.error("Erro interno do Brick:", error);
-                        }
+                    });
+
+                    // Se o código chegou aqui, significa que a transação falhou (ex: sem limite, dados errados)
+                    if (error) {
+                        const messageContainer = document.getElementById('payment-message');
+                        messageContainer.classList.remove('hidden');
+                        messageContainer.textContent = error.message;
+                        
+                        btnText.innerText = "Pagar Agora";
+                        btnSubmit.disabled = false;
+                        btnSubmit.style.background = "#111";
                     }
                 });
 
             } catch (error) {
-                // AGORA O ERRO EXATO VAI APARECER NO CONSOLE (F12) E NA TELA
-                console.error("🕵️‍♂️ Diagnóstico de Erro:", error.message || error);
-                document.getElementById('paymentBrick_container').innerHTML = `
+                console.error("Erro na integração Stripe:", error);
+                document.getElementById('payment-element').innerHTML = `
                     <div style="padding: 20px; text-align:center; border: 1px solid #dc3545; border-radius: 8px; background: #fff8f8;">
                         <h4 style="color: #dc3545; margin-bottom: 10px;"><i class="fas fa-exclamation-triangle"></i> Falha na Integração</h4>
-                        <p style="color: #666; font-size: 0.9rem;">${error.message || "Erro desconhecido. Abra o F12 para ver o console."}</p>
+                        <p style="color: #666; font-size: 0.9rem;">${error.message || "Erro desconhecido ao carregar o checkout."}</p>
                     </div>`;
             }
         });
