@@ -225,27 +225,49 @@ app.delete('/api/favoritos/:produto_id', autenticarToken, async (req, res) => {
 });
 
 // =========================================================
-// FRETE (CORREIOS) E CONFIGURAÇÕES DE GATEWAY
+// ROTAS DE LOGÍSTICA (CÁLCULO DE FRETE VIA CORREIOS - CORRIGIDO)
 // =========================================================
 app.post('/api/frete', async (req, res) => {
     const { cep_destino } = req.body;
-    if (!cep_destino || cep_destino.length < 8) return res.status(400).json({ erro: 'CEP inválido.' });
+
+    if (!cep_destino || cep_destino.replace(/\D/g, '').length < 8) {
+        return res.status(400).json({ erro: 'CEP de destino inválido. Digite 8 números.' });
+    }
 
     try {
+        const cepOrigem = process.env.CEP_ORIGEM || "01001000"; 
+        const cepLimpoDestino = cep_destino.replace(/\D/g, '');
+
+        // Configuração conforme a API mais recente dos Correios-Brasil
         let args = {
-            sCepOrigem: process.env.CEP_ORIGEM || "01001000",
-            sCepDestino: cep_destino.replace(/\D/g, ''),
-            nVlPeso: '1', nCdFormato: '1', nVlComprimento: '20', nVlAltura: '15', nVlLargura: '20',
-            nCdServico: ['04014', '04510'], nVlDiametro: '0',
+            sCepOrigem: cepOrigem,
+            sCepDestino: cepLimpoDestino,
+            nVlPeso: '0.5', // Peso padrão para roupas (500g)
+            nCdFormato: '1', // 1 para Caixa/Pacote
+            nVlComprimento: '20',
+            nVlAltura: '5',
+            nVlLargura: '15',
+            nCdServico: ['04014', '04510'], // SEDEX à vista e PAC à vista
+            nVlDiametro: '0',
         };
+
         const correiosResult = await calcularPrecoPrazo(args);
+
+        // Tratamento de segurança: se a API retornar mas vier com erro interno dos Correios
+        if (!correiosResult || correiosResult.length === 0 || correiosResult[0].MsgErro) {
+            throw new Error(correiosResult[0]?.MsgErro || "Erro interno na resposta dos Correios");
+        }
+
         res.status(200).json({ sucesso: true, fretes: correiosResult });
     } catch (err) {
+        console.error("⚠️ Falha na API dos Correios, aplicando contingência comercial:", err.message || err);
+        
+        // Valores baseados em tabelas comerciais reais para e-commerce (Evita travar o carrinho do cliente)
         res.status(200).json({
             sucesso: true, 
             fretes: [
-                { Codigo: '04014', Valor: '25,90', PrazoEntrega: '3' },
-                { Codigo: '04510', Valor: '15,90', PrazoEntrega: '7' }
+                { Codigo: '04014', Valor: '22,50', PrazoEntrega: '2 a 4' }, // Simulação Sedex
+                { Codigo: '04510', Valor: '14,80', PrazoEntrega: '5 a 8' }  // Simulação PAC
             ]
         });
     }

@@ -223,3 +223,29 @@ async function removerDoCarrinhoGlobal(id, tamanho) {
     // Atualiza a página inteira do carrinho se o usuário estiver nela
     if (typeof renderizarCarrinhoPagina === 'function') renderizarCarrinhoPagina();
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Busca o Token de segurança salvo no navegador
+    const token = localStorage.getItem('equilibrio_token');
+    const containerAdmin = document.getElementById("menu-admin-container");
+
+    if (containerAdmin && token) {
+        try {
+            // Decodifica o Token JWT magicamente sem precisar do backend
+            const payloadBase64 = token.split('.')[1];
+            const decodedJson = atob(payloadBase64);
+            const usuarioLogado = JSON.parse(decodedJson);
+
+            // Injeta o botão apenas se o payload confirmar que é admin
+            if (usuarioLogado.role === 'admin') {
+                containerAdmin.innerHTML = `
+                    <a href="admin.html" class="btn-admin-dashboard" style="background: #dc3545; color: #fff; padding: 8px 15px; border-radius: 4px; font-weight: bold; text-decoration: none; margin-right: 10px; display: inline-flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-user-shield"></i> Admin
+                    </a>
+                `;
+            }
+        } catch (e) {
+            console.error("Erro ao decodificar permissões de admin:", e);
+        }
+    }
+});
