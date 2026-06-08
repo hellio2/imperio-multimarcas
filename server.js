@@ -11,15 +11,8 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-// NOVAS IMPORTAÇÕES (PAGAMENTO E FRETE)
-// Substitua a linha antiga de importação do MP por esta:
-//const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+// PAGAMENTO E FRETE
 const { calcularPrecoPrazo } = require('correios-brasil');
-
-// Inicializa o Mercado Pago com a sua chave
-//const clienteMercadoPago = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
-
-// ADICIONE ESTA LINHA:
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
@@ -41,7 +34,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'equilibrio_produtos', // Pasta que será criada automaticamente no seu Cloudinary
+        folder: 'equilibrio_produtos',
         allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
     }
 });
@@ -63,7 +56,6 @@ function autenticarToken(req, res, next) {
     });
 }
 
-// Verifica se o usuário autenticado possui cargo de Administrador
 async function autenticarAdmin(req, res, next) {
     try {
         const result = await pool.query('SELECT role FROM usuarios WHERE id = $1', [req.usuario.id]);
@@ -77,7 +69,7 @@ async function autenticarAdmin(req, res, next) {
 }
 
 // =========================================================
-// ROTAS DE AUTENTICAÇÃO (LOGIN/CADASTRO)
+// ROTAS DE AUTENTICAÇÃO
 // =========================================================
 app.post('/api/auth/cadastro', async (req, res) => {
     const { nome, email, senha } = req.body;
@@ -96,7 +88,6 @@ app.post('/api/auth/cadastro', async (req, res) => {
         );
         res.status(201).json({ sucesso: true, mensagem: 'Conta criada!', usuario: novoUsuario.rows[0] });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ erro: 'Erro interno no cadastro.' });
     }
 });
@@ -121,15 +112,13 @@ app.post('/api/auth/login', async (req, res) => {
 
         res.status(200).json({ sucesso: true, token, usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email, role: usuario.role } });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ erro: 'Erro interno no login.' });
     }
 });
 
 // =========================================================
-// ROTAS ADMINISTRATIVAS (GESTÃO DE PRODUTOS)
+// ROTAS ADMINISTRATIVAS
 // =========================================================
-
 app.post('/api/admin/produtos', autenticarToken, autenticarAdmin, upload.single('imagem'), async (req, res) => {
     try {
         const { nome, descricao, preco, preco_antigo, categoria, estoque } = req.body;
@@ -140,11 +129,9 @@ app.post('/api/admin/produtos', autenticarToken, autenticarAdmin, upload.single(
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
             [nome, descricao, preco, preco_antigo || null, categoria, estoque || 0, imagem_url]
         );
-        
-        res.status(201).json({ sucesso: true, mensagem: 'Produto cadastrado com sucesso!', produto: result.rows[0] });
+        res.status(201).json({ sucesso: true, mensagem: 'Produto cadastrado!', produto: result.rows[0] });
     } catch (err) {
-        console.error("Erro ao cadastrar produto:", err);
-        res.status(500).json({ erro: 'Erro ao cadastrar o produto no banco de dados.' });
+        res.status(500).json({ erro: 'Erro ao cadastrar o produto.' });
     }
 });
 
@@ -165,15 +152,10 @@ app.put('/api/admin/produtos/:id', autenticarToken, autenticarAdmin, upload.sing
         }
 
         const result = await pool.query(query, params);
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ erro: 'Produto não encontrado.' });
-        }
-
-        res.status(200).json({ sucesso: true, mensagem: 'Produto atualizado com sucesso!', produto: result.rows[0] });
+        if (result.rows.length === 0) return res.status(404).json({ erro: 'Produto não encontrado.' });
+        res.status(200).json({ sucesso: true, mensagem: 'Produto atualizado!', produto: result.rows[0] });
     } catch (err) {
-        console.error("Erro ao atualizar produto:", err);
-        res.status(500).json({ erro: 'Erro interno ao tentar atualizar o produto.' });
+        res.status(500).json({ erro: 'Erro ao atualizar produto.' });
     }
 });
 
@@ -181,26 +163,21 @@ app.delete('/api/admin/produtos/:id', autenticarToken, autenticarAdmin, async (r
     const { id } = req.params;
     try {
         const result = await pool.query('DELETE FROM produtos WHERE id = $1 RETURNING *', [id]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({ erro: 'Produto não encontrado.' });
-        }
-        res.status(200).json({ sucesso: true, mensagem: 'Produto removido do catálogo com sucesso!' });
+        if (result.rows.length === 0) return res.status(404).json({ erro: 'Produto não encontrado.' });
+        res.status(200).json({ sucesso: true, mensagem: 'Produto removido!' });
     } catch (err) {
-        console.error("Erro ao deletar produto:", err);
-        res.status(500).json({ erro: 'Erro interno ao remover o produto.' });
+        res.status(500).json({ erro: 'Erro ao remover produto.' });
     }
 });
 
 // =========================================================
-// ROTAS DE CARRINHO E FAVORITOS (MANTIDAS)
+// ROTAS DE CARRINHO E FAVORITOS
 // =========================================================
 app.get('/api/carrinho', autenticarToken, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT c.id as carrinho_id, c.quantidade as qtd, c.tamanho, p.id, p.nome, p.preco, p.icone, p.imagem_url, p.categoria 
-             FROM carrinho c 
-             JOIN produtos p ON c.produto_id = p.id 
-             WHERE c.usuario_id = $1`, 
+             FROM carrinho c JOIN produtos p ON c.produto_id = p.id WHERE c.usuario_id = $1`, 
             [req.usuario.id]
         );
         res.status(200).json(result.rows);
@@ -248,36 +225,22 @@ app.delete('/api/favoritos/:produto_id', autenticarToken, async (req, res) => {
 });
 
 // =========================================================
-// ROTAS DE LOGÍSTICA (CÁLCULO DE FRETE VIA CORREIOS)
+// FRETE (CORREIOS) E CONFIGURAÇÕES DE GATEWAY
 // =========================================================
 app.post('/api/frete', async (req, res) => {
     const { cep_destino } = req.body;
-
-    if (!cep_destino || cep_destino.length < 8) {
-        return res.status(400).json({ erro: 'CEP de destino inválido.' });
-    }
+    if (!cep_destino || cep_destino.length < 8) return res.status(400).json({ erro: 'CEP inválido.' });
 
     try {
-        const cepOrigem = process.env.CEP_ORIGEM || "01001000"; 
-
         let args = {
-            sCepOrigem: cepOrigem,
+            sCepOrigem: process.env.CEP_ORIGEM || "01001000",
             sCepDestino: cep_destino.replace(/\D/g, ''),
-            nVlPeso: '1',
-            nCdFormato: '1',
-            nVlComprimento: '20',
-            nVlAltura: '15',
-            nVlLargura: '20',
-            nCdServico: ['04014', '04510'], 
-            nVlDiametro: '0',
+            nVlPeso: '1', nCdFormato: '1', nVlComprimento: '20', nVlAltura: '15', nVlLargura: '20',
+            nCdServico: ['04014', '04510'], nVlDiametro: '0',
         };
-
         const correiosResult = await calcularPrecoPrazo(args);
         res.status(200).json({ sucesso: true, fretes: correiosResult });
     } catch (err) {
-        // CORREÇÃO: Agora o terminal vai te dizer exatamente por que os Correios falharam
-        console.error("⚠️ Erro real dos Correios:", err.message || err);
-        
         res.status(200).json({
             sucesso: true, 
             fretes: [
@@ -288,103 +251,132 @@ app.post('/api/frete', async (req, res) => {
     }
 });
 
-
-// =========================================================
-// ROTA DE CONFIGURAÇÃO STRIPE (Envia a chave pública pro Frontend)
-// =========================================================
 app.get('/api/config/stripe', (req, res) => {
     res.json({ publicKey: process.env.STRIPE_PUBLIC_KEY });
 });
 
 // =========================================================
-// ROTA DE WEBHOOK (NOTIFICAÇÕES DO MERCADO PAGO)
-// =========================================================
-app.post('/api/webhook', (req, res) => {
-    // O Mercado Pago vai enviar "avisos" para esta rota automaticamente.
-    // Retornar 200 OK imediatamente é uma exigência deles.
-    res.status(200).send('OK');
-    
-    // Aqui no futuro você pode programar a lógica de atualizar o status do pedido 
-    // no banco de dados de "Pendente" para "Aprovado" quando o Pix for pago.
-    console.log("🔔 Webhook Recebido do MP:", req.query);
-});
-
-// =========================================================
-// ROTA DE PAGAMENTO (STRIPE INTENTS - EQUILÍBRIO MULTIMARCAS)
+// ROTA DE PAGAMENTO HÍBRIDA (STRIPE + ASAAS BLINDADA)
 // =========================================================
 app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
     try {
-        // 1. Busca os itens do carrinho para validar o valor no backend
+        const { metodo, cpf } = req.body;
+        
         const cartRes = await pool.query(
             `SELECT c.quantidade, p.nome, p.preco 
              FROM carrinho c JOIN produtos p ON c.produto_id = p.id 
              WHERE c.usuario_id = $1`, [req.usuario.id]
         );
 
-        if (cartRes.rows.length === 0) {
-            return res.status(400).json({ erro: 'Seu carrinho está vazio.' });
+        if (cartRes.rows.length === 0) return res.status(400).json({ erro: 'Carrinho vazio.' });
+        const totalCarrinho = cartRes.rows.reduce((acc, item) => acc + (Number(item.preco) * Number(item.quantidade)), 0);
+
+        // 🔀 STRIPE (CARTÃO)
+        if (metodo === 'cartao') {
+            const valorEmCentavos = Math.round(totalCarrinho * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: valorEmCentavos, currency: 'brl',
+                metadata: { usuario_id: req.usuario.id },
+                automatic_payment_methods: { enabled: true },
+            });
+            return res.status(200).json({ gateway: 'stripe', clientSecret: paymentIntent.client_secret });
         }
 
-        // Calcula o valor total do carrinho
-        const totalCarrinho = cartRes.rows.reduce((acc, item) => acc + (Number(item.preco) * Number(item.quantidade)), 0);
-        
-        // 🚨 REGRA DA STRIPE: Os valores devem ser enviados em CENTAVOS (Ex: R$ 5,00 vira 500)
-        const valorEmCentavos = Math.round(totalCarrinho * 100);
+        // 🔀 ASAAS (PIX E BOLETO)
+        else if (metodo === 'pix' || metodo === 'boleto') {
+            const asaasUrl = 'https://api-sandbox.asaas.com/v3'; //TESTE
+            //const asaasUrl = 'https://api.asaas.com/v3'; //PRODUÇÃO
+            const asaasHeaders = {
+                'Content-Type': 'application/json',
+                'access_token': process.env.ASAAS_API_KEY
+            };
 
-        // 2. Cria a Intenção de Pagamento na Stripe
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: valorEmCentavos,
-            currency: 'brl', // Define a moeda como Real Brasileiro
-            metadata: {
-                usuario_id: req.usuario.id,
-                loja: 'Equilíbrio Multimarcas'
-            },
-            // Ativa automaticamente Pix e Cartão de Crédito configurados no seu painel Stripe
-            automatic_payment_methods: {
-                enabled: true,
-            },
-        });
+            // Passo A: Cliente
+            const customerReq = await fetch(`${asaasUrl}/customers`, {
+                method: 'POST', headers: asaasHeaders,
+                body: JSON.stringify({
+                    name: req.usuario.nome || 'Cliente Teste',
+                    email: req.usuario.email || 'teste@email.com',
+                    cpfCnpj: cpf
+                })
+            });
+            const customerData = await customerReq.json();
 
-        // 3. Devolve o client_secret para o Frontend desenhar a tela de pagamento segura
-        res.status(200).json({
-            sucesso: true,
-            clientSecret: paymentIntent.client_secret, // O Frontend vai precisar disso aqui
-            id: paymentIntent.id
-        });
+            // 🚨 BLINDAGEM 1: Erro de Cliente/CPF
+            if (customerData.errors) {
+                console.error("Erro Asaas (Cliente):", customerData.errors);
+                return res.status(400).json({ erro: customerData.errors[0].description });
+            }
+
+            // Passo B: Cobrança
+            let dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 3);
+
+            const paymentReq = await fetch(`${asaasUrl}/payments`, {
+                method: 'POST', headers: asaasHeaders,
+                body: JSON.stringify({
+                    customer: customerData.id,
+                    billingType: metodo.toUpperCase(),
+                    value: Number(totalCarrinho),
+                    dueDate: dueDate.toISOString().split('T')[0],
+                    description: 'Pedido - Equilíbrio Multimarcas'
+                })
+            });
+            const paymentData = await paymentReq.json();
+
+            // 🚨 BLINDAGEM 2: Erro de Cobrança
+            if (paymentData.errors) {
+                console.error("Erro Asaas (Cobrança):", paymentData.errors);
+                return res.status(400).json({ erro: paymentData.errors[0].description });
+            }
+
+            // Passo C: QR Code (se for Pix)
+            let qrCodeData = null;
+            if (metodo === 'pix') {
+                const qrReq = await fetch(`${asaasUrl}/payments/${paymentData.id}/pixQrCode`, { headers: asaasHeaders });
+                qrCodeData = await qrReq.json();
+                
+                // 🚨 BLINDAGEM 3: Erro do QR Code
+                if (qrCodeData.errors) {
+                    return res.status(400).json({ erro: qrCodeData.errors[0].description });
+                }
+            }
+
+            return res.status(200).json({
+                gateway: 'asaas',
+                cobranca_id: paymentData.id,
+                boleto_url: paymentData.bankSlipUrl,
+                pix_qrcode: qrCodeData?.encodedImage,
+                pix_copia_cola: qrCodeData?.payload
+            });
+        } 
+        else { return res.status(400).json({ erro: 'Método não reconhecido.' }); }
 
     } catch (err) {
-        console.error("❌ Erro ao criar intenção de pagamento na Stripe:", err.message || err);
-        res.status(500).json({ erro: 'Erro interno ao inicializar o gateway de pagamento.' });
+        console.error("❌ Erro no Roteamento:", err);
+        res.status(500).json({ erro: 'Erro interno no processamento.' });
     }
 });
 
 // =========================================================
-// ROTAS DE PEDIDOS (PÓS-VENDA)
+// ROTAS DE PEDIDOS E PÚBLICAS
 // =========================================================
-
-// 1. Cliente finaliza a compra (Transforma carrinho em Pedido)
 app.post('/api/pedidos', autenticarToken, async (req, res) => {
     try {
-        // Pega os itens do carrinho
         const cartRes = await pool.query(
             `SELECT c.quantidade, c.tamanho, p.id as produto_id, p.preco 
-             FROM carrinho c JOIN produtos p ON c.produto_id = p.id 
-             WHERE c.usuario_id = $1`, [req.usuario.id]
+             FROM carrinho c JOIN produtos p ON c.produto_id = p.id WHERE c.usuario_id = $1`, [req.usuario.id]
         );
-        
         if(cartRes.rows.length === 0) return res.status(400).json({erro: "Carrinho vazio"});
 
-        // Calcula o total da venda
         const total = cartRes.rows.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
 
-        // Cria o Pedido Principal
         const pedRes = await pool.query(
             `INSERT INTO pedidos (usuario_id, total, status) VALUES ($1, $2, 'Aprovado') RETURNING id`, 
             [req.usuario.id, total]
         );
         const pedidoId = pedRes.rows[0].id;
 
-        // Insere as roupas no detalhe do pedido
         for(let item of cartRes.rows) {
             await pool.query(
                 `INSERT INTO itens_pedido (pedido_id, produto_id, quantidade, tamanho, preco_unitario) 
@@ -392,47 +384,27 @@ app.post('/api/pedidos', autenticarToken, async (req, res) => {
                 [pedidoId, item.produto_id, item.quantidade, item.tamanho, item.preco]
             );
         }
-
-        // ESVAZIA O CARRINHO DO BANCO
         await pool.query(`DELETE FROM carrinho WHERE usuario_id = $1`, [req.usuario.id]);
-
         res.status(200).json({ sucesso: true, pedido_id: pedidoId });
-    } catch (err) {
-        console.error("Erro ao gerar pedido:", err);
-        res.status(500).json({erro: "Erro interno ao processar pedido."});
-    }
+    } catch (err) { res.status(500).json({erro: "Erro ao gerar pedido."}); }
 });
 
-// 2. Admin visualiza todos os pedidos da loja
 app.get('/api/admin/pedidos', autenticarToken, autenticarAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT p.id, u.nome as cliente, p.total, p.status, p.criado_em 
-            FROM pedidos p JOIN usuarios u ON p.usuario_id = u.id 
-            ORDER BY p.id DESC
+            FROM pedidos p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.id DESC
         `);
         res.status(200).json(result.rows);
-    } catch (err) {
-        res.status(500).json({erro: "Erro ao buscar pedidos."});
-    }
+    } catch (err) { res.status(500).json({erro: "Erro ao buscar pedidos."}); }
 });
 
-// =========================================================
-// ROTAS PÚBLICAS
-// =========================================================
 app.get('/api/produtos', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM produtos WHERE ativo = TRUE ORDER BY id DESC');
         res.status(200).json(result.rows);
-    } catch (err) {
-        res.status(500).json({ erro: 'Erro ao carregar produtos.' });
-    }
+    } catch (err) { res.status(500).json({ erro: 'Erro ao carregar produtos.' }); }
 });
 
-app.use((req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.listen(PORT, () => {
-    console.log(`👑 Equilíbrio Multimarcas (Admin Mode) rodando na porta ${PORT}!`);
-});
+app.use((req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.listen(PORT, () => console.log(`👑 Equilíbrio Multimarcas (Admin Mode) rodando na porta ${PORT}!`));

@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Equilíbrio Multimarcas | Checkout Transparente</title>
+    <title>Equilíbrio Multimarcas | Checkout Híbrido</title>
     <link rel="stylesheet" href="css/variaveis.css">
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
     
+    <!-- SCRIPT DA STRIPE -->
     <script src="https://js.stripe.com/v3/"></script>
 
     <style>
@@ -25,7 +26,21 @@
         .frete-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
         .frete-card { border: 1px solid #ddd; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; transition: 0.3s; }
         
-        .hidden { display: none; }
+        /* ESTILOS DAS ABAS HÍBRIDAS */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; }
+        .tab-btn:hover { background: #eee; }
+        .tab-btn.active { background: #111; color: #fff; border-color: #111; }
+        .tab-content { display: none; animation: fadeIn 0.5s; }
+        .tab-content.active { display: block; }
+        
+        .asaas-box { border: 1px solid #eee; padding: 25px; border-radius: 8px; text-align: center; background: #fafafa; }
+        .input-cpf { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; text-align: center; }
+        .btn-pay { width: 100%; padding: 15px; background: #111; color: #fff; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: background 0.3s; }
+        .btn-pay:hover { background: #333; }
+        
+        .hidden { display: none !important; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body style="background-color: #f4f6f9;">
@@ -35,9 +50,10 @@
             <div class="checkout-header">
                 <i class="fas fa-lock"></i>
                 <h2>Finalizar <span>Pedido</span></h2>
-                <p>Ambiente 100% seguro. Seus dados não são salvos nos nossos servidores.</p>
+                <p>Ambiente 100% seguro. Suas transações são protegidas por criptografia de ponta a ponta.</p>
             </div>
 
+            <!-- SESSÃO DE FRETE -->
             <div style="margin-bottom: 30px;">
                 <h4 style="margin-bottom: 10px; text-transform: uppercase; font-size: 0.9rem;">1. Calcular Frete</h4>
                 <div class="cep-area">
@@ -47,27 +63,84 @@
                 <div id="frete-resultados" class="frete-options"></div>
             </div>
 
+            <!-- SESSÃO DE PAGAMENTO HÍBRIDO -->
             <div style="border-top: 1px solid #eee; padding-top: 30px;">
-                <h4 style="margin-bottom: 15px; text-transform: uppercase; font-size: 0.9rem;">2. Pagamento Seguro</h4>
+                <h4 style="margin-bottom: 15px; text-transform: uppercase; font-size: 0.9rem;">2. Escolha o Pagamento</h4>
                 
-                <form id="payment-form">
-                    <div id="payment-element">
-                        <p style="text-align: center; color: #666; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando ambiente seguro...</p>
+                <!-- MENU DE ABAS -->
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="mudarAba('cartao')"><i class="fas fa-credit-card"></i> Cartão</button>
+                    <button class="tab-btn" onclick="mudarAba('pix')"><i class="fab fa-pix"></i> Pix</button>
+                    <button class="tab-btn" onclick="mudarAba('boleto')"><i class="fas fa-barcode"></i> Boleto</button>
+                </div>
+
+                <!-- ABA 1: STRIPE (CARTÃO DE CRÉDITO) -->
+                <div id="aba-cartao" class="tab-content active">
+                    <form id="payment-form">
+                        <div id="payment-element">
+                            <p style="text-align: center; color: #666; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Conectando à Stripe...</p>
+                        </div>
+                        <button id="submit" class="btn-pay" style="margin-top:20px;">
+                            <span id="button-text">Pagar com Cartão</span>
+                        </button>
+                        <div id="payment-message" style="color: #dc3545; margin-top: 15px; text-align: center; font-weight: bold;" class="hidden"></div>
+                    </form>
+                </div>
+
+                <!-- ABA 2: ASAAS (PIX) -->
+                <div id="aba-pix" class="tab-content">
+                    <div class="asaas-box">
+                        <i class="fab fa-pix" style="font-size: 2rem; color: #32bcad; margin-bottom: 15px;"></i>
+                        <p style="margin-bottom: 15px; color: #555;">Para gerar o seu Pix, informe o seu CPF (Exigência do Banco Central).</p>
+                        <input type="text" id="cpf-pix" class="input-cpf" placeholder="Digite seu CPF (Apenas números)" maxlength="11">
+                        
+                        <div id="pix-area-resultado" class="hidden" style="margin: 20px 0;">
+                            <img id="pix-qrcode" src="" alt="QR Code Pix" style="max-width: 200px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: #fff; margin-bottom: 15px;">
+                            <p style="font-size: 0.9rem; margin-bottom: 5px;">Ou copie o código abaixo:</p>
+                            <textarea id="pix-copia-cola" readonly style="width: 100%; padding: 10px; font-size: 0.8rem; border: 1px solid #ccc; border-radius: 4px; resize: none;" rows="3"></textarea>
+                            <button onclick="concluirPedido()" class="btn-pay" style="margin-top: 15px; background: #28a745;">Já fiz o pagamento</button>
+                        </div>
+
+                        <button id="btn-gerar-pix" onclick="processarAsaas('pix')" class="btn-pay">Gerar Código Pix</button>
                     </div>
-                    
-                    <button id="submit" style="margin-top:20px; width:100%; padding: 15px; background: #111; color: #fff; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: background 0.3s;">
-                        <span id="button-text">Pagar Agora</span>
-                    </button>
-                    
-                    <div id="payment-message" style="color: #dc3545; margin-top: 15px; text-align: center; font-weight: bold;" class="hidden"></div>
-                </form>
+                </div>
+
+                <!-- ABA 3: ASAAS (BOLETO) -->
+                <div id="aba-boleto" class="tab-content">
+                    <div class="asaas-box">
+                        <i class="fas fa-barcode" style="font-size: 2rem; color: #111; margin-bottom: 15px;"></i>
+                        <p style="margin-bottom: 15px; color: #555;">O boleto será gerado no nome do titular do CPF abaixo.</p>
+                        <input type="text" id="cpf-boleto" class="input-cpf" placeholder="Digite seu CPF (Apenas números)" maxlength="11">
+                        
+                        <div id="boleto-area-resultado" class="hidden" style="margin: 20px 0;">
+                            <a id="boleto-link" href="#" target="_blank" class="btn-pay" style="display: block; background: #009ee3; text-decoration: none; margin-bottom: 15px;">Imprimir / Baixar PDF</a>
+                            <button onclick="concluirPedido()" class="btn-pay" style="background: #28a745;">Concluir Pedido</button>
+                        </div>
+
+                        <button id="btn-gerar-boleto" onclick="processarAsaas('boleto')" class="btn-pay">Gerar Boleto Bancário</button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
     <script>
         // =========================================================
-        // LÓGICA DE FRETE CORREIOS (MANTIDA INTACTA)
+        // LÓGICA DE ABAS DA INTERFACE
+        // =========================================================
+        function mudarAba(abaEscolhida) {
+            // Remove a classe active de todos os botões e conteúdos
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Ativa apenas a aba clicada
+            event.currentTarget.classList.add('active');
+            document.getElementById('aba-' + abaEscolhida).classList.add('active');
+        }
+
+        // =========================================================
+        // LÓGICA DE FRETE CORREIOS
         // =========================================================
         async function calcularFrete() {
             const cep = document.getElementById('cep-input').value;
@@ -94,11 +167,10 @@
         }
 
         // =========================================================
-        // INICIALIZAÇÃO DO STRIPE ELEMENTS
+        // INICIALIZAÇÃO DA STRIPE (SOMENTE ABA CARTÃO)
         // =========================================================
         document.addEventListener("DOMContentLoaded", async () => {
             const tokenAuth = localStorage.getItem('equilibrio_token');
-
             if (!tokenAuth) {
                 alert("Sessão expirada. Faça login para continuar.");
                 window.location.href = 'login.html';
@@ -106,81 +178,123 @@
             }
 
             try {
-                // 1. Pega a Chave Pública da Stripe no Backend
                 const configRes = await fetch('/api/config/stripe');
                 const configData = await configRes.json();
-                
-                if (!configData.publicKey) {
-                    throw new Error("Chave Pública não encontrada. Verifique as variáveis de ambiente.");
-                }
-                
                 const stripe = Stripe(configData.publicKey);
 
-                // 2. Chama a rota para criar a Intenção de Pagamento (Payment Intent)
+                // ATENÇÃO: Agora passamos "metodo: cartao" para o backend acionar a Stripe
                 const processRes = await fetch('/api/pagamento/processar', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${tokenAuth}` }
+                    headers: { 
+                        'Authorization': `Bearer ${tokenAuth}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ metodo: 'cartao' })
                 });
                 const data = await processRes.json();
 
-                if (data.erro) {
-                    throw new Error(data.erro);
-                }
+                if (data.erro) throw new Error(data.erro);
 
-                const clientSecret = data.clientSecret;
-
-                // 3. Monta o formulário Stripe Elements na tela
                 const appearance = { theme: 'stripe' };
-                const elements = stripe.elements({ appearance, clientSecret });
+                const elements = stripe.elements({ appearance, clientSecret: data.clientSecret });
+                const paymentElement = elements.create('payment', {
+                    // Como temos o Pix por fora, pedimos pra Stripe focar no cartão
+                    wallets: { applePay: 'auto', googlePay: 'auto' } 
+                });
                 
-                const paymentElement = elements.create('payment');
-                
-                // Limpa o container e monta o formulário real
                 document.getElementById('payment-element').innerHTML = '';
                 paymentElement.mount('#payment-element');
 
-                // 4. Intercepta o clique no botão "Pagar Agora"
                 const form = document.getElementById('payment-form');
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    
-                    const btnText = document.getElementById('button-text');
-                    const btnSubmit = document.getElementById('submit');
-                    
-                    btnText.innerText = "Processando...";
-                    btnSubmit.disabled = true;
-                    btnSubmit.style.background = "#555";
+                    document.getElementById('button-text').innerText = "Processando...";
+                    document.getElementById('submit').disabled = true;
 
-                    // A Stripe processa tudo com segurança e redireciona automaticamente em caso de sucesso
                     const { error } = await stripe.confirmPayment({
                         elements,
-                        confirmParams: {
-                            // Manda o usuário para a tela de sucesso assim que o pagamento for aprovado
-                            return_url: window.location.origin + '/sucesso.html',
-                        }
+                        confirmParams: { return_url: window.location.origin + '/sucesso.html' }
                     });
 
-                    // Se o código chegou aqui, significa que a transação falhou (ex: sem limite, dados errados)
                     if (error) {
-                        const messageContainer = document.getElementById('payment-message');
-                        messageContainer.classList.remove('hidden');
-                        messageContainer.textContent = error.message;
-                        
-                        btnText.innerText = "Pagar Agora";
-                        btnSubmit.disabled = false;
-                        btnSubmit.style.background = "#111";
+                        const msg = document.getElementById('payment-message');
+                        msg.classList.remove('hidden');
+                        msg.textContent = error.message;
+                        document.getElementById('button-text').innerText = "Pagar com Cartão";
+                        document.getElementById('submit').disabled = false;
                     }
                 });
-
             } catch (error) {
-                console.error("Erro na integração Stripe:", error);
-                document.getElementById('payment-element').innerHTML = `
-                    <div style="padding: 20px; text-align:center; border: 1px solid #dc3545; border-radius: 8px; background: #fff8f8;">
-                        <h4 style="color: #dc3545; margin-bottom: 10px;"><i class="fas fa-exclamation-triangle"></i> Falha na Integração</h4>
-                        <p style="color: #666; font-size: 0.9rem;">${error.message || "Erro desconhecido ao carregar o checkout."}</p>
-                    </div>`;
+                document.getElementById('payment-element').innerHTML = `<p style="color: red;">Falha ao carregar formulário de cartão.</p>`;
             }
         });
+
+        // =========================================================
+        // PROCESSAMENTO ASAAS (PIX E BOLETO)
+        // =========================================================
+        async function processarAsaas(metodo) {
+            const cpfInput = document.getElementById(`cpf-${metodo}`);
+            const btnAcao = document.getElementById(`btn-gerar-${metodo}`);
+            
+            if (cpfInput.value.length < 11) {
+                alert("Por favor, digite um CPF válido.");
+                return;
+            }
+
+            btnAcao.innerText = "Conectando ao banco...";
+            btnAcao.disabled = true;
+
+            try {
+                const tokenAuth = localStorage.getItem('equilibrio_token');
+                
+                // Manda o pedido pro backend rotear para o Asaas
+                const resposta = await fetch('/api/pagamento/processar', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${tokenAuth}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        metodo: metodo, 
+                        cpf: cpfInput.value 
+                    })
+                });
+
+                const dados = await resposta.json();
+
+                if (dados.erro) {
+                    alert("Falha: " + dados.erro);
+                    btnAcao.innerText = metodo === 'pix' ? "Gerar Código Pix" : "Gerar Boleto Bancário";
+                    btnAcao.disabled = false;
+                    return;
+                }
+
+                // Esconde o input e o botão inicial
+                cpfInput.classList.add('hidden');
+                btnAcao.classList.add('hidden');
+
+                // Renderiza a tela de Sucesso do Asaas
+                if (metodo === 'pix') {
+                    document.getElementById('pix-area-resultado').classList.remove('hidden');
+                    // O Asaas devolve a imagem em formato base64 pronta para exibir
+                    document.getElementById('pix-qrcode').src = `data:image/png;base64,${dados.pix_qrcode}`;
+                    document.getElementById('pix-copia-cola').value = dados.pix_copia_cola;
+                } else if (metodo === 'boleto') {
+                    document.getElementById('boleto-area-resultado').classList.remove('hidden');
+                    document.getElementById('boleto-link').href = dados.boleto_url;
+                }
+
+            } catch (error) {
+                alert("Erro ao processar com o banco.");
+                btnAcao.innerText = "Tentar Novamente";
+                btnAcao.disabled = false;
+            }
+        }
+
+        // Função genérica de redirecionamento para limpar o carrinho e finalizar
+        function concluirPedido() {
+            window.location.href = 'sucesso.html';
+        }
     </script>
 </body>
 </html>
