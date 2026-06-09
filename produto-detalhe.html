@@ -6,7 +6,8 @@
     <title>Equilíbrio Multimarcas | Detalhes do Produto</title>
     <link rel="stylesheet" href="css/variaveis.css">
     <link rel="stylesheet" href="css/estilos.css">
-    <link rel="stylesheet" href="css/componentes/home.css"> <link rel="stylesheet" href="css/componentes/produto-detalhe.css">
+    <link rel="stylesheet" href="css/componentes/home.css"> 
+    <link rel="stylesheet" href="css/componentes/produto-detalhe.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
 </head>
@@ -22,7 +23,6 @@
                 <a href="favoritos.html">Favoritos</a>
             </nav>
             <div class="header-actions">
-                <!-- O botão de admin será injetado dinamicamente aqui dentro se o usuário for qualificado -->
                 <div id="menu-admin-container"></div>
                 <a href="favoritos.html" class="action-icon">
                     <i class="far fa-heart"></i>
@@ -50,8 +50,7 @@
         <div class="section-header">
             <h2>Quem viu este produto, <span>também curtiu</span></h2>
         </div>
-        <div class="products-grid" id="sugestoes-grid">
-            </div>
+        <div class="products-grid" id="sugestoes-grid"></div>
     </section>
 
     <section class="newsletter-section">
@@ -83,11 +82,12 @@
                 </ul>
             </div>
             <div class="footer-links">
-                <h4>Suporte</h4>
+                <h4>Institucional e Suporte</h4>
                 <ul>
-                    <li><a href="#">Fale Connosco</a></li>
-                    <li><a href="#">Políticas de Troca</a></li>
-                    <li><a href="#">Prazos de Entrega</a></li>
+                    <li><a href="sobre.html">Sobre Nós</a></li>
+                    <li><a href="contato.html">Fale Conosco</a></li>
+                    <li><a href="trocas.html">Políticas de Troca</a></li>
+                    <li><a href="privacidade.html">Política de Privacidade</a></li>
                 </ul>
             </div>
         </div>
@@ -98,7 +98,6 @@
 
     <script src="js/main.js"></script>
     <script src="js/favoritos.js"></script>
-    <script src="js/carrinho.js"></script>
 
     <script>
         let tamanhoSelecionado = "M";
@@ -132,7 +131,6 @@
                 return;
             }
 
-            // Injeta o Produto Principal
             container.innerHTML = `
                 <div class="detail-image-section">
                     <div class="detail-img-box">
@@ -181,9 +179,7 @@
                 </div>
             `;
 
-            // RENDEREZAÇÃO AUTOMÁTICA DAS SUGESTÕES
             if (sugestoesGrid) {
-                // Filtra para remover o produto atual da lista e pega até 4 itens restantes do PostgreSQL
                 const outrasSugestoes = PRODUTOS_DB.filter(p => p.id !== produtoId).slice(0, 4);
 
                 if (outrasSugestoes.length === 0) {
@@ -221,5 +217,22 @@
             }
         });
     </script>
+
+    <div id="toast-container" class="toast-container"></div>
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-drawer-header">
+            <h3>Seu Carrinho</h3>
+            <button class="close-cart-btn" id="close-cart-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-drawer-body" id="minicart-body"></div>
+        <div class="cart-drawer-footer">
+            <div class="cart-drawer-total">
+                <span>Subtotal:</span>
+                <span id="minicart-total">R$ 0,00</span>
+            </div>
+            <button class="hero-btn" style="width: 100%; text-align: center;" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+        </div>
+    </div>
 </body>
 </html>
