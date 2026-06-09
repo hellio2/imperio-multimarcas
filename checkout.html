@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
     
-    <!-- SCRIPT DA STRIPE -->
     <script src="https://js.stripe.com/v3/"></script>
 
     <style>
@@ -53,7 +52,6 @@
                 <p>Ambiente 100% seguro. Suas transações são protegidas por criptografia de ponta a ponta.</p>
             </div>
 
-            <!-- SESSÃO DE FRETE -->
             <div style="margin-bottom: 30px;">
                 <h4 style="margin-bottom: 10px; text-transform: uppercase; font-size: 0.9rem;">1. Calcular Frete</h4>
                 <div class="cep-area">
@@ -63,7 +61,6 @@
                 <div id="frete-resultados" class="frete-options"></div>
             </div>
 
-            <!-- SESSÃO DE ENDEREÇO DE ENTREGA -->
             <div style="border-top: 1px solid #eee; padding-top: 30px; margin-bottom: 30px;">
                 <h4 style="margin-bottom: 15px; text-transform: uppercase; font-size: 0.9rem;">2. Endereço de Entrega</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -77,18 +74,15 @@
                 </div>
             </div>
 
-            <!-- SESSÃO DE PAGAMENTO HÍBRIDO -->
             <div style="border-top: 1px solid #eee; padding-top: 30px;">
                 <h4 style="margin-bottom: 15px; text-transform: uppercase; font-size: 0.9rem;">3. Escolha o Pagamento</h4>
                 
-                <!-- MENU DE ABAS -->
                 <div class="tabs">
                     <button class="tab-btn active" onclick="mudarAba('cartao')"><i class="fas fa-credit-card"></i> Cartão</button>
                     <button class="tab-btn" onclick="mudarAba('pix')"><i class="fab fa-pix"></i> Pix</button>
                     <button class="tab-btn" onclick="mudarAba('boleto')"><i class="fas fa-barcode"></i> Boleto</button>
                 </div>
 
-                <!-- ABA 1: STRIPE (CARTÃO DE CRÉDITO) -->
                 <div id="aba-cartao" class="tab-content active">
                     <form id="payment-form">
                         <div id="payment-element">
@@ -101,7 +95,6 @@
                     </form>
                 </div>
 
-                <!-- ABA 2: ASAAS (PIX) -->
                 <div id="aba-pix" class="tab-content">
                     <div class="asaas-box">
                         <i class="fab fa-pix" style="font-size: 2rem; color: #32bcad; margin-bottom: 15px;"></i>
@@ -119,7 +112,6 @@
                     </div>
                 </div>
 
-                <!-- ABA 3: ASAAS (BOLETO) -->
                 <div id="aba-boleto" class="tab-content">
                     <div class="asaas-box">
                         <i class="fas fa-barcode" style="font-size: 2rem; color: #111; margin-bottom: 15px;"></i>
@@ -144,13 +136,49 @@
         // LÓGICA DE ABAS DA INTERFACE
         // =========================================================
         function mudarAba(abaEscolhida) {
-            // Remove a classe active de todos os botões e conteúdos
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            // Ativa apenas a aba clicada
             event.currentTarget.classList.add('active');
             document.getElementById('aba-' + abaEscolhida).classList.add('active');
+        }
+
+        // =========================================================
+        // VIACEP E PREENCHIMENTO AUTOMÁTICO DE ENDEREÇO
+        // =========================================================
+        
+        // Puxa o endereço salvo do banco ao abrir o checkout
+        document.addEventListener("DOMContentLoaded", async () => {
+            const token = localStorage.getItem('equilibrio_token');
+            if(token) {
+                try {
+                    const res = await fetch('/api/usuario/perfil', { headers: { 'Authorization': `Bearer ${token}` } });
+                    if(res.ok) {
+                        const perfil = await res.json();
+                        document.getElementById('envio-cep').value = perfil.cep || '';
+                        document.getElementById('envio-logradouro').value = perfil.logradouro || '';
+                        document.getElementById('envio-numero').value = perfil.numero || '';
+                        document.getElementById('envio-complemento').value = perfil.complemento || '';
+                        document.getElementById('envio-bairro').value = perfil.bairro || '';
+                        document.getElementById('envio-cidade').value = perfil.cidade || '';
+                        document.getElementById('envio-estado').value = perfil.estado || '';
+                    }
+                } catch(e) { console.error("Erro ao puxar endereço no checkout", e); }
+            }
+        });
+
+        // Script do ViaCEP para o Checkout
+        async function buscarCep(idCep, idLog, idBairro, idCidade, idEstado) {
+            const cep = document.getElementById(idCep).value.replace(/\D/g, '');
+            if (cep.length === 8) {
+                const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                const dados = await res.json();
+                if (!dados.erro) {
+                    document.getElementById(idLog).value = dados.logradouro;
+                    document.getElementById(idBairro).value = dados.bairro;
+                    document.getElementById(idCidade).value = dados.localidade;
+                    document.getElementById(idEstado).value = dados.uf;
+                }
+            }
         }
 
         // =========================================================
@@ -196,13 +224,9 @@
                 const configData = await configRes.json();
                 const stripe = Stripe(configData.publicKey);
 
-                // ATENÇÃO: Agora passamos "metodo: cartao" para o backend acionar a Stripe
                 const processRes = await fetch('/api/pagamento/processar', {
                     method: 'POST',
-                    headers: { 
-                        'Authorization': `Bearer ${tokenAuth}`,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Authorization': `Bearer ${tokenAuth}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ metodo: 'cartao' })
                 });
                 const data = await processRes.json();
@@ -211,10 +235,7 @@
 
                 const appearance = { theme: 'stripe' };
                 const elements = stripe.elements({ appearance, clientSecret: data.clientSecret });
-                const paymentElement = elements.create('payment', {
-                    // Como temos o Pix por fora, pedimos pra Stripe focar no cartão
-                    wallets: { applePay: 'auto', googlePay: 'auto' } 
-                });
+                const paymentElement = elements.create('payment', { wallets: { applePay: 'auto', googlePay: 'auto' } });
                 
                 document.getElementById('payment-element').innerHTML = '';
                 paymentElement.mount('#payment-element');
@@ -223,11 +244,18 @@
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     document.getElementById('button-text').innerText = "Processando...";
-                    document.getElementById('submit').disabled = true;
+                    const btnSubmit = document.getElementById('submit');
+                    btnSubmit.disabled = true;
 
+                    // 1. SALVA O PEDIDO NO BANCO E PEGA O ID
+                    const pedRes = await fetch('/api/pedidos', { method: 'POST', headers: { 'Authorization': `Bearer ${tokenAuth}` } });
+                    const pedDados = await pedRes.json();
+                    const idPedido = pedDados.pedido_id || 'Aprovado';
+
+                    // 2. ENVIA PARA A STRIPE COM O ID DO PEDIDO NA URL
                     const { error } = await stripe.confirmPayment({
                         elements,
-                        confirmParams: { return_url: window.location.origin + '/sucesso.html' }
+                        confirmParams: { return_url: window.location.origin + '/sucesso.html?pedido=' + idPedido }
                     });
 
                     if (error) {
@@ -235,7 +263,7 @@
                         msg.classList.remove('hidden');
                         msg.textContent = error.message;
                         document.getElementById('button-text').innerText = "Pagar com Cartão";
-                        document.getElementById('submit').disabled = false;
+                        btnSubmit.disabled = false;
                     }
                 });
             } catch (error) {
@@ -250,30 +278,18 @@
             const cpfInput = document.getElementById(`cpf-${metodo}`);
             const btnAcao = document.getElementById(`btn-gerar-${metodo}`);
             
-            if (cpfInput.value.length < 11) {
-                alert("Por favor, digite um CPF válido.");
-                return;
-            }
+            if (cpfInput.value.length < 11) return alert("Por favor, digite um CPF válido.");
 
             btnAcao.innerText = "Conectando ao banco...";
             btnAcao.disabled = true;
 
             try {
                 const tokenAuth = localStorage.getItem('equilibrio_token');
-                
-                // Manda o pedido pro backend rotear para o Asaas
                 const resposta = await fetch('/api/pagamento/processar', {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${tokenAuth}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        metodo: metodo, 
-                        cpf: cpfInput.value 
-                    })
+                    headers: { 'Authorization': `Bearer ${tokenAuth}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ metodo: metodo, cpf: cpfInput.value })
                 });
-
                 const dados = await resposta.json();
 
                 if (dados.erro) {
@@ -283,21 +299,24 @@
                     return;
                 }
 
-                // Esconde o input e o botão inicial
+                // 1. SALVA O PEDIDO NO BANCO APÓS GERAR O PIX/BOLETO
+                const pedRes = await fetch('/api/pedidos', { method: 'POST', headers: { 'Authorization': `Bearer ${tokenAuth}` } });
+                const pedDados = await pedRes.json();
+                
+                // Salva o ID globalmente para o botão "Concluir Pedido"
+                window.pedidoAtualId = pedDados.pedido_id || 'Pendente';
+
                 cpfInput.classList.add('hidden');
                 btnAcao.classList.add('hidden');
 
-                // Renderiza a tela de Sucesso do Asaas
                 if (metodo === 'pix') {
                     document.getElementById('pix-area-resultado').classList.remove('hidden');
-                    // O Asaas devolve a imagem em formato base64 pronta para exibir
                     document.getElementById('pix-qrcode').src = `data:image/png;base64,${dados.pix_qrcode}`;
                     document.getElementById('pix-copia-cola').value = dados.pix_copia_cola;
                 } else if (metodo === 'boleto') {
                     document.getElementById('boleto-area-resultado').classList.remove('hidden');
                     document.getElementById('boleto-link').href = dados.boleto_url;
                 }
-
             } catch (error) {
                 alert("Erro ao processar com o banco.");
                 btnAcao.innerText = "Tentar Novamente";
@@ -305,46 +324,9 @@
             }
         }
 
-        // Função genérica de redirecionamento para limpar o carrinho e finalizar
         function concluirPedido() {
-            window.location.href = 'sucesso.html';
+            window.location.href = 'sucesso.html?pedido=' + (window.pedidoAtualId || 'Registrado');
         }
     </script>
 </body>
 </html>
-
-<script>
-    // Puxa o endereço salvo do banco ao abrir o checkout
-    document.addEventListener("DOMContentLoaded", async () => {
-        const token = localStorage.getItem('equilibrio_token');
-        if(token) {
-            try {
-                const res = await fetch('/api/usuario/perfil', { headers: { 'Authorization': `Bearer ${token}` } });
-                const perfil = await res.json();
-                
-                document.getElementById('envio-cep').value = perfil.cep || '';
-                document.getElementById('envio-logradouro').value = perfil.logradouro || '';
-                document.getElementById('envio-numero').value = perfil.numero || '';
-                document.getElementById('envio-complemento').value = perfil.complemento || '';
-                document.getElementById('envio-bairro').value = perfil.bairro || '';
-                document.getElementById('envio-cidade').value = perfil.cidade || '';
-                document.getElementById('envio-estado').value = perfil.estado || '';
-            } catch(e) {}
-        }
-    });
-
-    // Script do ViaCEP para o Checkout
-    async function buscarCep(idCep, idLog, idBairro, idCidade, idEstado) {
-        const cep = document.getElementById(idCep).value.replace(/\D/g, '');
-        if (cep.length === 8) {
-            const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-            const dados = await res.json();
-            if (!dados.erro) {
-                document.getElementById(idLog).value = dados.logradouro;
-                document.getElementById(idBairro).value = dados.bairro;
-                document.getElementById(idCidade).value = dados.localidade;
-                document.getElementById(idEstado).value = dados.uf;
-            }
-        }
-    }
-</script>

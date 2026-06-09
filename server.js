@@ -475,8 +475,6 @@ app.get('/api/produtos', async (req, res) => {
     } catch (err) { res.status(500).json({ erro: 'Erro ao carregar produtos.' }); }
 });
 
-app.use((req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-
 // =========================================================
 // ROTAS DO PAINEL DO CLIENTE (PERFIL E MEUS PEDIDOS)
 // =========================================================
@@ -525,5 +523,7 @@ app.get('/api/meus-pedidos', autenticarToken, async (req, res) => {
         res.status(200).json(pedidos);
     } catch (err) { res.status(500).json({ erro: 'Erro ao buscar histórico de pedidos.' }); }
 });
+
+app.use((req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 app.listen(PORT, () => console.log(`👑 Equilíbrio Multimarcas (Admin Mode) rodando na porta ${PORT}!`));

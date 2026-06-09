@@ -14,3 +14,5 @@ Adicionar CNPJ e endereço no sobre e no rodapé do site
 [Prioridade 5 - Sugestão] Sistema de Status de Pedido Automatizado: Atualmente, a rota /api/pedidos cria o pedido direto como 'Aprovado'. Precisamos ajustar para que compras via Pix/Boleto nasçam como 'Pendente' e mudem para 'Aprovado' automaticamente.
 
 [Prioridade 6 - Sugestão] Página de Sucesso Dinâmica: Adaptar a sucesso.html para ler se o cliente veio da Stripe (cartão aprovado) ou do Asaas, exibindo o QR Code do Pix novamente caso ele tenha fechado a aba sem querer.
+
+Código de rastreio - admin inclui o código no pedido, e o cliente pode acompanhar. Botão de acompanhar pedido que direciona para o correios.

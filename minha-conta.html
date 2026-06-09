@@ -169,46 +169,59 @@
         }
 
         async function carregarDados() {
-            // 1. Carrega Perfil
-            const resPerfil = await fetch('/api/usuario/perfil', { headers: { 'Authorization': `Bearer ${token}` } });
-            const perfil = await resPerfil.json();
-            document.getElementById('p-nome').value = perfil.nome || '';
-            document.getElementById('p-telefone').value = perfil.telefone || '';
-            document.getElementById('p-cep').value = perfil.cep || '';
-            document.getElementById('p-logradouro').value = perfil.logradouro || '';
-            document.getElementById('p-numero').value = perfil.numero || '';
-            document.getElementById('p-complemento').value = perfil.complemento || '';
-            document.getElementById('p-bairro').value = perfil.bairro || '';
-            document.getElementById('p-cidade').value = perfil.cidade || '';
-            document.getElementById('p-estado').value = perfil.estado || '';
-
-            // 2. Carrega Pedidos
-            const resPedidos = await fetch('/api/meus-pedidos', { headers: { 'Authorization': `Bearer ${token}` } });
-            const pedidos = await resPedidos.json();
-            const boxPedidos = document.getElementById('lista-pedidos');
-            
-            if (pedidos.length === 0) {
-                boxPedidos.innerHTML = '<p>Você ainda não realizou nenhuma compra.</p>';
-                return;
+            // 1. CARREGA E PRÉ-PREENCHE O PERFIL
+            try {
+                const resPerfil = await fetch('/api/usuario/perfil', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (resPerfil.ok) {
+                    const perfil = await resPerfil.json();
+                    document.getElementById('p-nome').value = perfil.nome || '';
+                    document.getElementById('p-telefone').value = perfil.telefone || '';
+                    document.getElementById('p-cep').value = perfil.cep || '';
+                    document.getElementById('p-logradouro').value = perfil.logradouro || '';
+                    document.getElementById('p-numero').value = perfil.numero || '';
+                    document.getElementById('p-complemento').value = perfil.complemento || '';
+                    document.getElementById('p-bairro').value = perfil.bairro || '';
+                    document.getElementById('p-cidade').value = perfil.cidade || '';
+                    document.getElementById('p-estado').value = perfil.estado || '';
+                }
+            } catch (err) {
+                console.error("Erro ao carregar os dados do perfil:", err);
             }
 
-            boxPedidos.innerHTML = pedidos.map(p => `
-                <div class="pedido-card">
-                    <div class="pedido-header">
-                        <span>Pedido #${p.id} <small style="color:#666; margin-left:10px;">${new Date(p.criado_em).toLocaleDateString('pt-BR')}</small></span>
-                        <span class="status-badge ${p.status}">${p.status}</span>
-                    </div>
-                    ${p.itens.map(i => `
-                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 0.9rem;">
-                            <span>${i.quantidade}x ${i.nome} (Tam: ${i.tamanho})</span>
-                            <strong>R$ ${(Number(i.preco_unitario)*i.quantidade).toFixed(2).replace('.', ',')}</strong>
+            // 2. CARREGA O HISTÓRICO DE PEDIDOS
+            const boxPedidos = document.getElementById('lista-pedidos');
+            try {
+                const resPedidos = await fetch('/api/meus-pedidos', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (resPedidos.ok) {
+                    const pedidos = await resPedidos.json();
+                    
+                    // Se não houver pedidos, exibe a mensagem amigável
+                    if (pedidos.length === 0) {
+                        boxPedidos.innerHTML = '<p style="text-align: center; color: #666; padding: 20px; font-weight: bold;">Ainda não há pedidos.</p>';
+                        return;
+                    }
+
+                    boxPedidos.innerHTML = pedidos.map(p => `
+                        <div class="pedido-card">
+                            <div class="pedido-header">
+                                <span>Pedido #${p.id} <small style="color:#666; margin-left:10px;">${new Date(p.criado_em).toLocaleDateString('pt-BR')}</small></span>
+                                <span class="status-badge ${p.status}">${p.status}</span>
+                            </div>
+                            ${p.itens.map(i => `
+                                <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 0.9rem;">
+                                    <span>${i.quantidade}x ${i.nome} (Tam: ${i.tamanho})</span>
+                                    <strong>R$ ${(Number(i.preco_unitario)*i.quantidade).toFixed(2).replace('.', ',')}</strong>
+                                </div>
+                            `).join('')}
+                            <div style="border-top: 1px solid #eee; margin-top: 15px; padding-top: 10px; text-align: right;">
+                                <strong>Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</strong>
+                            </div>
                         </div>
-                    `).join('')}
-                    <div style="border-top: 1px solid #eee; margin-top: 15px; padding-top: 10px; text-align: right;">
-                        <strong>Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</strong>
-                    </div>
-                </div>
-            `).join('');
+                    `).join('');
+                }
+            } catch (err) {
+                boxPedidos.innerHTML = '<p style="text-align: center; color: #dc3545;">Erro ao carregar o histórico de pedidos.</p>';
+            }
         }
 
         async function atualizarPerfil(e) {

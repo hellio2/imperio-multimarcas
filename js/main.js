@@ -229,6 +229,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const token = localStorage.getItem('equilibrio_token');
     const containerAdmin = document.getElementById("menu-admin-container");
 
+    // === NOVO: REDIRECIONA O ÍCONE DE USUÁRIO PARA MINHA CONTA ===
+    const iconeUsuario = document.querySelector('a[href="login.html"]');
+    if (iconeUsuario && token) {
+        iconeUsuario.href = 'minha-conta.html';
+    }
+    // =============================================================
+
     if (containerAdmin && token) {
         try {
             // Decodifica o Token JWT magicamente sem precisar do backend
