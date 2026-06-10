@@ -492,11 +492,13 @@ app.post('/api/pedidos', autenticarToken, async (req, res) => {
 app.get('/api/admin/pedidos', autenticarToken, autenticarAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT p.id, u.nome as cliente, p.total, p.status, p.criado_em 
+            SELECT p.id, u.nome as cliente, p.total, p.status, p.criado_em, p.codigo_rastreio 
             FROM pedidos p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.id DESC
         `);
         res.status(200).json(result.rows);
-    } catch (err) { res.status(500).json({erro: "Erro ao buscar pedidos."}); }
+    } catch (err) { 
+        res.status(500).json({erro: "Erro ao buscar pedidos."}); 
+    }
 });
 
 // Rota para o Admin atualizar o Rastreio
@@ -553,7 +555,7 @@ app.put('/api/usuario/perfil', autenticarToken, async (req, res) => {
 app.get('/api/meus-pedidos', autenticarToken, async (req, res) => {
     try {
         const pedidosRes = await pool.query(
-            `SELECT id, total, status, criado_em FROM pedidos WHERE usuario_id = $1 ORDER BY id DESC`, 
+            `SELECT id, total, status, criado_em, codigo_rastreio FROM pedidos WHERE usuario_id = $1 ORDER BY id DESC`, 
             [req.usuario.id]
         );
         
@@ -568,7 +570,9 @@ app.get('/api/meus-pedidos', autenticarToken, async (req, res) => {
             pedido.itens = itensRes.rows;
         }
         res.status(200).json(pedidos);
-    } catch (err) { res.status(500).json({ erro: 'Erro ao buscar histórico de pedidos.' }); }
+    } catch (err) { 
+        res.status(500).json({ erro: 'Erro ao buscar histórico de pedidos.' }); 
+    }
 });
 
 app.use((req, res) => res.sendFile(path.join(__dirname, 'index.html')));
