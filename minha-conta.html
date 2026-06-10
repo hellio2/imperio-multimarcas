@@ -14,20 +14,31 @@
         .conta-menu { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); height: fit-content; }
         .conta-menu button { display: block; width: 100%; text-align: left; padding: 15px; background: none; border: none; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #555; transition: 0.3s; }
         .conta-menu button.active, .conta-menu button:hover { color: #111; padding-left: 20px; border-left: 3px solid #111; }
-        .conta-content { flex: 3; background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .conta-content { flex: 3; background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden;}
         .tab-panel { display: none; animation: fadeIn 0.4s; }
         .tab-panel.active { display: block; }
         
-        /* Formulário */
+        /* Formulário Responsivo */
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .form-grid input { padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Montserrat', sans-serif; width: 100%; box-sizing: border-box; }
         .full-width { grid-column: 1 / -1; }
         
         /* Pedidos */
         .pedido-card { border: 1px solid #eee; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        .pedido-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; }
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; background: #e3f2fd; color: #0d47a1; }
+        .pedido-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; }
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; background: #e3f2fd; color: #0d47a1; text-align: center; }
         .status-badge.Aprovado { background: #e8f5e9; color: #2e7d32; }
+        .status-badge.Pendente { background: #fff3cd; color: #856404; }
+
+        /* O SEGREDO DO MOBILE */
+        @media (max-width: 768px) {
+            .conta-container { flex-direction: column; margin: 20px auto; padding: 0 15px; gap: 20px; }
+            .conta-content { padding: 25px 15px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: auto; }
+            .pedido-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .status-badge { align-self: flex-start; }
+        }
     </style>
 </head>
 <body style="background: #f4f6f9;">
@@ -46,7 +57,6 @@
                     <input type="text" placeholder="Buscar no Equilíbrio...">
                     <i class="fas fa-search"></i>
                 </div>
-                <!-- O botão de admin será injetado dinamicamente aqui dentro se o usuário for qualificado -->
                 <div id="menu-admin-container"></div>
                 <a href="favoritos.html" class="action-icon">
                     <i class="fas fa-heart"></i>
@@ -73,7 +83,6 @@
         </aside>
 
         <section class="conta-content">
-            <!-- ABA PEDIDOS -->
             <div id="aba-pedidos" class="tab-panel active">
                 <h2 style="margin-bottom: 20px; font-weight: 900; text-transform: uppercase;">Meus Pedidos</h2>
                 <div id="lista-pedidos">
@@ -81,7 +90,6 @@
                 </div>
             </div>
 
-            <!-- ABA PERFIL -->
             <div id="aba-perfil" class="tab-panel">
                 <h2 style="margin-bottom: 20px; font-weight: 900; text-transform: uppercase;">Meus Dados</h2>
                 <form id="form-perfil" class="form-grid" onsubmit="atualizarPerfil(event)">
@@ -94,7 +102,7 @@
                     <input type="text" id="p-bairro" placeholder="Bairro">
                     <input type="text" id="p-cidade" placeholder="Cidade">
                     <input type="text" id="p-estado" placeholder="Estado (UF)" maxlength="2">
-                    <button type="submit" class="hero-btn full-width" style="margin-top: 10px;">Salvar Alterações</button>
+                    <button type="submit" class="hero-btn full-width" style="margin-top: 10px; width: 100%;">Salvar Alterações</button>
                 </form>
             </div>
         </section>
@@ -151,7 +159,6 @@
             window.location.href = 'index.html';
         }
 
-        // Função ViaCEP Global
         async function buscarCep(idCep, idLog, idBairro, idCidade, idEstado) {
             const cep = document.getElementById(idCep).value.replace(/\D/g, '');
             if (cep.length === 8) {
@@ -169,7 +176,6 @@
         }
 
         async function carregarDados() {
-            // 1. CARREGA E PRÉ-PREENCHE O PERFIL
             try {
                 const resPerfil = await fetch('/api/usuario/perfil', { headers: { 'Authorization': `Bearer ${token}` } });
                 if (resPerfil.ok) {
@@ -184,18 +190,14 @@
                     document.getElementById('p-cidade').value = perfil.cidade || '';
                     document.getElementById('p-estado').value = perfil.estado || '';
                 }
-            } catch (err) {
-                console.error("Erro ao carregar os dados do perfil:", err);
-            }
+            } catch (err) {}
 
-            // 2. CARREGA O HISTÓRICO DE PEDIDOS
             const boxPedidos = document.getElementById('lista-pedidos');
             try {
                 const resPedidos = await fetch('/api/meus-pedidos', { headers: { 'Authorization': `Bearer ${token}` } });
                 if (resPedidos.ok) {
                     const pedidos = await resPedidos.json();
                     
-                    // Se não houver pedidos, exibe a mensagem amigável
                     if (pedidos.length === 0) {
                         boxPedidos.innerHTML = '<p style="text-align: center; color: #666; padding: 20px; font-weight: bold;">Ainda não há pedidos.</p>';
                         return;
