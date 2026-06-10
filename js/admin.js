@@ -4,18 +4,12 @@ let PRODUTOS_LOCAL_LIST = [];
 // VERIFICAÇÃO CRÍTICA DE PERMISSÃO AO CARREGAR A TELA
 document.addEventListener("DOMContentLoaded", () => {
     const token = localStorage.getItem('equilibrio_token');
-    const userJson = localStorage.getItem('equilibrio_user');
+    const usuarioLogado = JSON.parse(localStorage.getItem('equilibrio_usuario') || "null");
 
-    if (!token || !userJson) {
-        alert("Acesso restrito. Faça login para continuar.");
-        window.location.href = 'login.html';
-        return;
-    }
-
-    const usuario = JSON.parse(userJson);
-    if (usuario.role !== 'admin') {
-        alert("Acesso negado. Esta área é restrita aos administradores do Equilíbrio.");
-        window.location.href = 'index.html';
+    // Correção: Agora avalia corretamente usando usuarioLogado sem código duplicado/quebrado
+    if (!token || !usuarioLogado || usuarioLogado.role !== 'admin') {
+        alert("Acesso restrito. Faça login como administrador para continuar.");
+        window.location.href = "login.html";
         return;
     }
 
@@ -29,10 +23,8 @@ function alternarPainel(idAba) {
     event.currentTarget.classList.add('active');
     document.getElementById(`panel-${idAba}`).classList.add('active');
 
-    if (idAba === 'catalogo') {
-        carregarProdutosDoCatalogo();
-    }
-    if (idAba === 'pedidos') carregarPedidosAdmin(); // <-- ADICIONE ESTA LINHA
+    if (idAba === 'catalogo') carregarProdutosDoCatalogo();
+    if (idAba === 'pedidos') carregarPedidosAdmin();
 }
 
 function mostrarNotificacaoAdmin(mensagem, tipo = 'success') {
@@ -95,7 +87,6 @@ async function carregarProdutosDoCatalogo() {
         const resposta = await fetch('/api/produtos');
         const produtos = await resposta.json();
         
-        // Guarda na memória local do script para usarmos na edição
         PRODUTOS_LOCAL_LIST = produtos;
 
         if (produtos.length === 0) {
@@ -134,11 +125,9 @@ async function carregarProdutosDoCatalogo() {
 // AÇÃO 2: CONTROLAR FILTRAGEM E PREENCHIMENTO DO MODAL (EDIT)
 // =========================================================
 function abrirModalEditar(id) {
-    // Localiza os dados do produto clicado na lista que guardamos
     const prod = PRODUTOS_LOCAL_LIST.find(p => p.id === id);
     if (!prod) return;
 
-    // Preenche as caixas de texto do Modal com as informações atuais do Postgres
     document.getElementById('edit-prod-id').value = prod.id;
     document.getElementById('edit-prod-name').value = prod.nome;
     document.getElementById('edit-prod-categoria').value = prod.categoria;
@@ -147,7 +136,6 @@ function abrirModalEditar(id) {
     document.getElementById('edit-prod-estoque').value = prod.estoque;
     document.getElementById('edit-prod-descricao').value = prod.descricao || '';
 
-    // Abre a janela flutuante adicionando a classe CSS
     document.getElementById('modal-editar').classList.add('active');
 }
 
@@ -156,7 +144,6 @@ function fecharModalEditar() {
     document.getElementById('form-editar-produto').reset();
 }
 
-// INTERCEPTA O ENVIO DE SALVAR DA JANELA DE EDIÇÃO (PUT)
 document.getElementById('form-editar-produto').addEventListener('submit', async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('equilibrio_token');
@@ -170,11 +157,8 @@ document.getElementById('form-editar-produto').addEventListener('submit', async 
     formData.append('estoque', document.getElementById('edit-prod-estoque').value);
     formData.append('descricao', document.getElementById('edit-prod-descricao').value);
     
-    // Só envia a foto se o usuário selecionou algum arquivo novo
     const fotoInput = document.getElementById('edit-prod-imagem');
-    if (fotoInput.files.length > 0) {
-        formData.append('imagem', fotoInput.files[0]);
-    }
+    if (fotoInput.files.length > 0) formData.append('imagem', fotoInput.files[0]);
 
     try {
         const resposta = await fetch(`/api/admin/produtos/${id}`, {
@@ -187,7 +171,7 @@ document.getElementById('form-editar-produto').addEventListener('submit', async 
         if (resposta.ok) {
             mostrarNotificacaoAdmin('Produto e fotos atualizados com absoluto sucesso!');
             fecharModalEditar();
-            carregarProdutosDoCatalogo(); // Recarrega a planilha na hora
+            carregarProdutosDoCatalogo();
         } else {
             mostrarNotificacaoAdmin(dados.erro || 'Erro ao atualizar produto.', 'error');
         }
@@ -200,7 +184,7 @@ document.getElementById('form-editar-produto').addEventListener('submit', async 
 // AÇÃO 3: REMOVER ITEM DO BANCO (DELETE)
 // =========================================================
 async function deletarProduto(id) {
-    if (!confirm("Tem certeza absoluta de que deseja remover esta peça do catálogo do Equilíbrio definitivamente?")) return;
+    if (!confirm("Tem certeza absoluta de que deseja remover esta peça do catálogo?")) return;
 
     const token = localStorage.getItem('equilibrio_token');
 
@@ -213,7 +197,7 @@ async function deletarProduto(id) {
         const dados = await resposta.json();
         if (resposta.ok) {
             mostrarNotificacaoAdmin('Produto removido do seu catálogo!');
-            carregarProdutosDoCatalogo(); // Atualiza a tabela na hora
+            carregarProdutosDoCatalogo();
         } else {
             mostrarNotificacaoAdmin(dados.erro || 'Erro ao deletar produto.', 'error');
         }
@@ -221,46 +205,97 @@ async function deletarProduto(id) {
         mostrarNotificacaoAdmin('Erro ao conectar com o servidor.', 'error');
     }
 }
+
 // =========================================================
-// GESTÃO DE PEDIDOS (ADMIN)
+// GESTÃO DE PEDIDOS E RASTREIO (ADMIN)
 // =========================================================
 async function carregarPedidosAdmin() {
-    const tbody = document.querySelector('#panel-pedidos tbody');
+    const tbody = document.getElementById('admin-pedidos-lista');
     if (!tbody) return;
 
     const token = localStorage.getItem('equilibrio_token');
     
     try {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Carregando pedidos...</td></tr>';
+        
         const resposta = await fetch('/api/admin/pedidos', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const pedidos = await resposta.json();
 
         if (pedidos.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">Nenhum pedido realizado ainda.</td></tr>`;
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum pedido encontrado.</td></tr>';
             return;
         }
 
         tbody.innerHTML = pedidos.map(p => {
-            const dataFormatada = new Date(p.criado_em).toLocaleDateString('pt-BR');
-            const totalFormatado = parseFloat(p.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            
+            let corBadge = p.status === 'Aprovado' ? 'background: #e8f5e9; color: #2e7d32;' : 
+                           p.status === 'Enviado' ? 'background: #e3f2fd; color: #0d47a1;' : 
+                           'background: #fff3cd; color: #856404;'; 
+                           
             return `
                 <tr>
-                    <td style="font-weight:bold;">#${p.id}</td>
+                    <td style="font-weight: bold;">#${p.id}</td>
                     <td>${p.cliente}</td>
-                    <td>${dataFormatada}</td>
-                    <td style="font-weight:bold;">${totalFormatado}</td>
-                    <td><span class="status-badge" style="background:#d4edda; color:#155724;">${p.status}</span></td>
+                    <td>${new Date(p.criado_em).toLocaleDateString('pt-BR')}</td>
+                    <td>R$ ${Number(p.total).toFixed(2).replace('.', ',')}</td>
+                    <td><span style="padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight:bold; ${corBadge}">${p.status}</span></td>
+                    <td style="font-family: monospace; letter-spacing: 1px; color: #555;">${p.codigo_rastreio || '-'}</td>
                     <td>
-                        <button class="table-action-btn edit" onclick="alert('Funcionalidade de despacho em desenvolvimento.')">
-                            <i class="fas fa-truck"></i> Enviar
+                        <button class="table-action-btn edit" onclick="abrirModalRastreio(${p.id})" style="background: #111; color: #fff; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-truck"></i> ${p.codigo_rastreio ? 'Alterar' : 'Enviar'}
                         </button>
                     </td>
                 </tr>
             `;
         }).join('');
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Erro ao carregar pedidos.</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: red;">Erro ao carregar pedidos.</td></tr>';
+    }
+}
+
+function abrirModalRastreio(idPedido) {
+    document.getElementById('rastreio-pedido-id').value = idPedido;
+    document.getElementById('input-codigo-rastreio').value = ''; 
+    document.getElementById('modal-rastreio').style.display = 'flex';
+}
+
+function fecharModalRastreio() {
+    document.getElementById('modal-rastreio').style.display = 'none';
+}
+
+async function salvarRastreio(event) {
+    event.preventDefault();
+    
+    const token = localStorage.getItem('equilibrio_token');
+    const idPedido = document.getElementById('rastreio-pedido-id').value;
+    const codigoRastreio = document.getElementById('input-codigo-rastreio').value;
+    const btnSubmit = event.target.querySelector('button');
+    
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+    btnSubmit.disabled = true;
+
+    try {
+        const resposta = await fetch(`/api/admin/pedidos/${idPedido}/rastreio`, {
+            method: 'PUT',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ codigo_rastreio: codigoRastreio.toUpperCase() })
+        });
+
+        if (resposta.ok) {
+            mostrarNotificacaoAdmin('Código de rastreio salvo e status atualizado!');
+            fecharModalRastreio();
+            carregarPedidosAdmin(); 
+        } else {
+            mostrarNotificacaoAdmin('Falha ao salvar o rastreio.', 'error');
+        }
+    } catch (err) {
+        mostrarNotificacaoAdmin('Erro de conexão com o servidor.', 'error');
+    } finally {
+        btnSubmit.innerHTML = '<i class="fas fa-truck"></i> Confirmar Envio';
+        btnSubmit.disabled = false;
     }
 }

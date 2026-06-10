@@ -101,7 +101,7 @@
                             </tr>
                         </thead>
                         <tbody id="admin-produtos-lista">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </section>
@@ -120,19 +120,12 @@
                                 <th>Data</th>
                                 <th>Total</th>
                                 <th>Status</th>
+                                <th>Rastreio</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>#10244</td>
-                                <td>Hellio Silva</td>
-                                <td>29/05/2026</td>
-                                <td>R$ 369,80</td>
-                                <td><span class="status-badge pendente">Pendente</span></td>
-                                <td><button class="table-action-btn edit"><i class="fas fa-check"></i> Aprovar</button></td>
-                            </tr>
-                        </tbody>
+                        <tbody id="admin-pedidos-lista">
+                            </tbody>
                     </table>
                 </div>
             </section>
@@ -140,6 +133,7 @@
     </div>
 
     <div id="toast-container" class="toast-container"></div>
+    
     <div id="modal-editar" class="admin-modal">
         <div class="modal-content admin-card">
             <div class="modal-header-inline">
@@ -148,7 +142,8 @@
             </div>
             
             <form id="form-editar-produto" enctype="multipart/form-data" style="margin-top: 20px;">
-                <input type="hidden" id="edit-prod-id"> <div class="admin-form-grid">
+                <input type="hidden" id="edit-prod-id"> 
+                <div class="admin-form-grid">
                     <div class="form-control">
                         <label for="edit-prod-name">Nome do Produto</label>
                         <input type="text" id="edit-prod-name" required>
@@ -176,7 +171,7 @@
                         <input type="number" id="edit-prod-estoque" required>
                     </div>
                     <div class="form-control">
-                        <label for="edit-prod-imagem">Substituir Foto (Deixe em branco para manter a atual)</label>
+                        <label for="edit-prod-imagem">Substituir Foto (Opcional)</label>
                         <input type="file" id="edit-prod-imagem" accept="image/*">
                     </div>
                 </div>
@@ -193,6 +188,28 @@
             </form>
         </div>
     </div>
+
+    <div id="modal-rastreio" class="admin-modal">
+        <div class="modal-content admin-card" style="max-width: 400px;">
+            <div class="modal-header-inline">
+                <h3>Informar <span>Rastreio</span></h3>
+                <button class="close-modal-btn" onclick="fecharModalRastreio()"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="color: #666; font-size: 0.9rem; margin-top: 10px;">Informe o código de rastreamento da transportadora. O status do pedido mudará para "Enviado".</p>
+            
+            <form id="form-rastreio" style="margin-top: 20px;" onsubmit="salvarRastreio(event)">
+                <input type="hidden" id="rastreio-pedido-id">
+                <div class="form-control">
+                    <label for="input-codigo-rastreio">Código de Rastreio</label>
+                    <input type="text" id="input-codigo-rastreio" required placeholder="Ex: BR123456789BR" style="text-transform: uppercase;">
+                </div>
+                <button type="submit" class="admin-btn" style="width: 100%; margin-top: 15px;">
+                    <i class="fas fa-truck"></i> Confirmar Envio
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script src="js/admin.js"></script>
 </body>
 </html>

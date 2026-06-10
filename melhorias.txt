@@ -1,20 +1,4 @@
-[ok] Página "Pedidos" para os clientes;
-[ok] Melhoria no cadastro dos clientes: nome completo, email, telefone, endereço etc.
-[ok] No checkout, pedir o endereço de entrega, e já puxar como opção o endereço cadastrado, com opção de editar.
-
-Adicionar CNPJ e endereço no sobre e no rodapé do site
-
 [Prioridade 1] Correção do Motor de Frete (Correios): Fundamental resolver antes de qualquer coisa, pois um frete quebrado impede o cliente de finalizar o carrinho. (Resolvido abaixo).
-
-[ok] [Prioridade 2] Visibilidade Admin (Botão de Dashboard Dinâmico): Segurança e praticidade. Precisamos fazer o cabeçalho/menu do site identificar se o usuário logado é admin e injetar o botão. (Resolvido abaixo).
-
-[ok] [Prioridade 3] Tela "Meus Pedidos" do Cliente: Essencial para a transparência do pós-venda. O cliente precisa ver o histórico de compras e se o Pix/Boleto foi aprovado.
-
-[ok] [Prioridade 4] Páginas Institucionais e Rodapé Global: Criação do arquivo CSS/JS global para o rodapé e estruturação das páginas (Sobre, Contato, Privacidade e Trocas) para blindagem jurídica da loja.
-
-[Prioridade 5 - Sugestão] Sistema de Status de Pedido Automatizado: Atualmente, a rota /api/pedidos cria o pedido direto como 'Aprovado'. Precisamos ajustar para que compras via Pix/Boleto nasçam como 'Pendente' e mudem para 'Aprovado' automaticamente.
-
-[Prioridade 6 - Sugestão] Página de Sucesso Dinâmica: Adaptar a sucesso.html para ler se o cliente veio da Stripe (cartão aprovado) ou do Asaas, exibindo o QR Code do Pix novamente caso ele tenha fechado a aba sem querer.
 
 Código de rastreio - admin inclui o código no pedido, e o cliente pode acompanhar. Botão de acompanhar pedido que direciona para o correios. Aparecerá na aba meus pedidos.
 

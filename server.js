@@ -428,6 +428,37 @@ app.post('/api/pagamento/processar', autenticarToken, async (req, res) => {
 });
 
 // =========================================================
+// WEBHOOK DO ASAAS (SINAL DE PAGAMENTO RECEBIDO)
+// =========================================================
+app.post('/api/webhooks/asaas', async (req, res) => {
+    // O Asaas envia o aviso no formato event = 'PAYMENT_RECEIVED'
+    const evento = req.body;
+
+    if (evento.event === 'PAYMENT_RECEIVED' || evento.event === 'PAYMENT_CONFIRMED') {
+        // Aqui a mágica acontece: Pega o ID da cobrança paga
+        const asaasCobrancaId = evento.payment.id;
+        
+        try {
+            // Em um sistema 100% completo, você teria uma coluna "transacao_id" na tabela pedidos.
+            // Quando ele paga, o sistema busca o pedido por esse transacao_id e muda para Aprovado:
+            /*
+            await pool.query(
+                "UPDATE pedidos SET status = 'Aprovado' WHERE transacao_id = $1", 
+                [asaasCobrancaId]
+            );
+            */
+            console.log(`✅ Uau! O Asaas avisou que a cobrança ${asaasCobrancaId} foi paga!`);
+            
+        } catch (err) {
+            console.error("Erro ao atualizar pedido via Webhook:", err);
+        }
+    }
+
+    // Você SEMPRE deve devolver status 200 pro Asaas, senão ele acha que seu site caiu e tenta de novo.
+    res.status(200).send('OK'); 
+});
+
+// =========================================================
 // ROTAS DE PEDIDOS E PÚBLICAS
 // =========================================================
 app.post('/api/pedidos', autenticarToken, async (req, res) => {
@@ -441,7 +472,7 @@ app.post('/api/pedidos', autenticarToken, async (req, res) => {
         const total = cartRes.rows.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
 
         const pedRes = await pool.query(
-            `INSERT INTO pedidos (usuario_id, total, status) VALUES ($1, $2, 'Aprovado') RETURNING id`, 
+            `INSERT INTO pedidos (usuario_id, total, status) VALUES ($1, $2, 'Pendente') RETURNING id`, 
             [req.usuario.id, total]
         );
         const pedidoId = pedRes.rows[0].id;
@@ -466,6 +497,22 @@ app.get('/api/admin/pedidos', autenticarToken, autenticarAdmin, async (req, res)
         `);
         res.status(200).json(result.rows);
     } catch (err) { res.status(500).json({erro: "Erro ao buscar pedidos."}); }
+});
+
+// Rota para o Admin atualizar o Rastreio
+app.put('/api/admin/pedidos/:id/rastreio', autenticarToken, autenticarAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { codigo_rastreio } = req.body;
+    try {
+        // Atualiza o código e já muda o status para "Enviado"
+        await pool.query(
+            `UPDATE pedidos SET codigo_rastreio = $1, status = 'Enviado' WHERE id = $2`, 
+            [codigo_rastreio, id]
+        );
+        res.status(200).json({ sucesso: true });
+    } catch (err) { 
+        res.status(500).json({erro: "Erro ao salvar rastreio."}); 
+    }
 });
 
 app.get('/api/produtos', async (req, res) => {

@@ -216,6 +216,14 @@
                             <div style="border-top: 1px solid #eee; margin-top: 15px; padding-top: 10px; text-align: right;">
                                 <strong>Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</strong>
                             </div>
+                            
+                            ${p.codigo_rastreio ? `
+                            <div style="margin-top: 15px; padding: 12px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 4px; text-align: left;">
+                                <i class="fas fa-truck" style="color: #009ee3; margin-right: 5px;"></i> 
+                                <strong>Rastreio:</strong> <span style="letter-spacing: 1px;">${p.codigo_rastreio}</span>
+                                <a href="https://rastreamento.correios.com.br/app/index.php" target="_blank" style="margin-left: 10px; color: #111; font-weight: bold; text-decoration: underline; font-size: 0.9rem;">Rastrear Pedido</a>
+                            </div>
+                            ` : ''}
                         </div>
                     `).join('');
                 }
